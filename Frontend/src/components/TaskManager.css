@@ -49,7 +49,7 @@ select option { background: var(--bg-input); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-input[type=range] { -webkit-appearance: none; background: transparent; }
+input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
 input[type=range]::-webkit-slider-runnable-track { background: rgba(139,92,246,0.15); height: 3px; border-radius: 2px; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); margin-top: -5px; cursor: pointer; box-shadow: 0 0 0 3px rgba(139,92,246,0.22); }
 
@@ -132,7 +132,7 @@ button { font-family: inherit; }
   font-size: 14px; color: #fff;
 }
 .sidebar-logo-text div { font-size: 12px; font-weight: 800; color: var(--text-heading); letter-spacing: 0.1em; font-family: 'DM Mono', monospace; }
-.sidebar-logo-text .tier { font-size: 9px; color: var(--text-muted); letter-spacing: 0.12em; margin-top: 1px; }
+.sidebar-logo-text .tier { font-size: 9px; color: var(--text-body); letter-spacing: 0.12em; margin-top: 1px; }
 
 .sidebar-cta {
   width: 100%; padding: 9px 0; border-radius: 8px;
@@ -147,7 +147,7 @@ button { font-family: inherit; }
   background: transparent; border: 1px solid transparent; width: 100%;
   display: flex; align-items: center; gap: 9px;
   padding: 8px 12px; border-radius: 7px; margin-bottom: 2px;
-  color: var(--text-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--text-body); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
   cursor: pointer; text-align: left; font-family: 'DM Mono', monospace; transition: all 0.15s;
 }
 .nav-btn.active { background: var(--accent-bg); border-color: var(--border); color: var(--accent-light); }
@@ -157,7 +157,7 @@ button { font-family: inherit; }
 .bottom-btn {
   width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 12px;
   border-radius: 6px; background: transparent; border: none;
-  color: var(--text-dim); font-size: 10px; cursor: pointer;
+  color: var(--text-body); font-size: 10px; cursor: pointer;
   font-family: 'DM Mono', monospace; letter-spacing: 0.07em;
 }
 
@@ -171,7 +171,7 @@ button { font-family: inherit; }
 }
 .brand { display: flex; gap: 8px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; }
 .brand-primary { font-weight: 800; color: var(--accent-light); }
-.brand-secondary { color: var(--text-dim); }
+.brand-secondary { color: var(--text-body); }
 
 .topnav-search {
   display: flex; align-items: center; gap: 8px;
@@ -182,18 +182,18 @@ button { font-family: inherit; }
 .tab-btn {
   background: none; border: none; font-size: 10px; font-weight: 700;
   letter-spacing: 0.08em; cursor: pointer; font-family: 'DM Mono', monospace;
-  color: var(--text-muted); border-bottom: 2px solid transparent; padding-bottom: 2px;
+  color: var(--text-body); border-bottom: 2px solid transparent; padding-bottom: 2px;
 }
 .tab-btn.active { color: var(--text-heading); border-bottom-color: var(--accent); }
 
 .topnav-right { display: flex; gap: 12px; align-items: center; }
-.icon-btn { background: none; border: none; font-size: 14px; color: var(--text-dim); cursor: pointer; }
+.icon-btn { background: none; border: none; font-size: 14px; color: var(--text-body); cursor: pointer; }
 .notif-dot { position: absolute; top:0; right:-1px; width:5px; height:5px; border-radius:50%; background:#f87171; }
 
 .topnav-user { display: flex; align-items: center; gap: 8px; }
 .user-title { margin: 0; font-size: 11px; font-weight: 700; color: var(--text-body); }
-.user-subtitle { margin: 0; font-size: 9px; color: var(--text-muted); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
-.hamburger-btn { display: none; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px; }
+.user-subtitle { margin: 0; font-size: 9px; color: var(--text-body); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+.hamburger-btn { display: none; background: none; border: none; color: var(--text-body); font-size: 22px; cursor: pointer; padding: 4px; }
 
 /* ============================================================
    KANBAN
@@ -204,7 +204,7 @@ button { font-family: inherit; }
 .filter-btn {
   display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px;
   background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
-  color: var(--text-muted); font-size: 10px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.06em;
+  color: var(--text-body); font-size: 10px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.06em;
 }
 
 .kanban-columns { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; padding: 20px 32px 24px; overflow-y: auto; }

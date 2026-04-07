@@ -15,8 +15,8 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
       </div>
 
       <div className="topnav-search">
-        <span style={{ fontSize: 12, color: "var(--text-dim)" }}>⌕</span>
-        <span style={{ fontSize: 11, color: "var(--text-dim)" }}>BUSCAR ACTIVOS...</span>
+        <span style={{ fontSize: 12, color: "var(--text-body)" }}>⌕</span>
+        <span style={{ fontSize: 11, color: "var(--text-body)" }}>BUSCAR ACTIVOS...</span>
       </div>
 
       <div className="topnav-links">
