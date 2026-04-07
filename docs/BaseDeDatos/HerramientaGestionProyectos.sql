@@ -157,6 +157,8 @@ CREATE TABLE tags (
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name       VARCHAR(100) NOT NULL,
   color      VARCHAR(7) NOT NULL DEFAULT '#6366f1',
+    CONSTRAINT ck_color_hexadecimal 
+    CHECK (color ~* '^#[0-9A-F]{6}$')
   UNIQUE (project_id, name)
 );
 
