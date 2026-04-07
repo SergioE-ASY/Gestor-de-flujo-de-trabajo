@@ -18,7 +18,6 @@ Esta base de datos relacional ha sido diseñada para **HGP**, una herramienta de
 El esquema sigue un modelo relacional estricto con las siguientes cardinalidades clave:
 
 ### Relaciones de Pertenencia y Jerarquía
-*   **Organización a Usuarios (1 : N):** Una organización tiene muchos usuarios. Un usuario pertenece solo a una organización.
 *   **Organización a Proyectos (1 : N):** Una organización posee múltiples proyectos.
 *   **Proyecto a Tareas (1 : N):** Un proyecto contiene muchas tareas. Si el proyecto se borra lógicamente, las tareas asociadas también deben considerarse inactivas a nivel de aplicación.
 *   **Proyecto a Sprints (1 : N):** Un proyecto puede tener múltiples iteraciones de tiempo (sprints).
@@ -26,6 +25,7 @@ El esquema sigue un modelo relacional estricto con las siguientes cardinalidades
 *   **Tarea a Subtareas (1 : N - Recursiva):** Una tarea puede ser "padre" de múltiples subtareas utilizando el campo `parent_task_id`.
 
 ### Relaciones de Colaboración
+*   **Organización a Usuarios (N : M):** Múltiples usuarios pueden pertenecer a múltiples organizaciones. Esto se resuelve mediante la tabla pivot `organization_users`, que define si el usuario y su rol general en dicho entorno.
 *   **Proyectos a Usuarios (N : M):** Muchos usuarios trabajan en muchos proyectos. Esto se resuelve mediante la tabla pivot `project_members`, que además define el rol específico del usuario dentro de ese proyecto.
 *   **Usuarios a Tareas (1 : N):** Un usuario puede tener asignadas múltiples tareas (mediante `assignee_id` en la tabla `tasks`).
 *   **Tareas a Etiquetas (N : M):** Una tarea puede tener múltiples etiquetas y una etiqueta puede aplicarse a muchas tareas. Resuelto vía la tabla pivot `task_tags`.
@@ -43,9 +43,13 @@ El esquema sigue un modelo relacional estricto con las siguientes cardinalidades
 Representa el espacio de trabajo principal de la empresa o cliente. Aísla los datos en un entorno multi-inquilino (*multi-tenant*).
 *   **Campos clave:** `crm_company_id` (para futura integración bidireccional con un CRM), `deleted_at`.
 
+#### `organization_users` (Tabla Pivot)
+Define a qué organizaciones pertenece un usuario y cuál es su rol general en esa organización específica.
+*   **Campos clave:** `role` (Define permisos de organización: admin, manager, member, viewer).
+
 #### `users`
 Almacena las credenciales y el perfil de los individuos que utilizan la plataforma.
-*   **Campos clave:** `role` (Define permisos a nivel global: admin, manager, member, viewer), `password_hash` (debe guardar hashes de bcrypt/argon2, nunca texto plano).
+*   **Campos clave:** `password_hash` (debe guardar hashes de bcrypt/argon2, nunca texto plano).
 
 ### Nivel: Estructura del Trabajo
 
