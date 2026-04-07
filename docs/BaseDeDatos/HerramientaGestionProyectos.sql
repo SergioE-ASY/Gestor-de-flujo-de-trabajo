@@ -33,7 +33,7 @@ CREATE TABLE organizations (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name           VARCHAR(255) NOT NULL,
   crm_company_id VARCHAR(100),
-  logo_url       VARCHAR(500),
+  logo           BYTEA,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at     TIMESTAMPTZ -- Soft delete
@@ -50,7 +50,7 @@ CREATE TABLE users (
   email           VARCHAR(255) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
   role            user_role NOT NULL DEFAULT 'member',
-  avatar_url      VARCHAR(500),
+  avatar          BYTEA,
   is_active       BOOLEAN NOT NULL DEFAULT TRUE,
   last_login_at   TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -172,7 +172,7 @@ CREATE TABLE attachments (
   task_id     UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   filename    VARCHAR(500) NOT NULL,
-  file_url    VARCHAR(1000) NOT NULL,
+  uploaded_photo BYTEA NOT NULL,
   file_size   INTEGER,
   mime_type   VARCHAR(100),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
