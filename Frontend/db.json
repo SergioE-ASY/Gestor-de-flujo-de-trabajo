@@ -220,6 +220,28 @@
       "type": "task",
       "_ui_column": "assigned",
       "_extra_assignees": []
+    },
+    {
+      "id": "4qmGDUsf3l8",
+      "title": "asdasdsadasd",
+      "description": "fsdfsdfsdfds",
+      "project_id": "prj-001",
+      "due_date": "2026-05-12",
+      "priority": "urgent",
+      "tags": [
+        "tag-001"
+      ],
+      "sprint_id": null,
+      "assignee_id": null,
+      "parent_task_id": null,
+      "project_sequence": 99,
+      "position": 99,
+      "estimated_min": null,
+      "status": "todo",
+      "completed_at": null,
+      "type": "task",
+      "_ui_column": "pending",
+      "_extra_assignees": []
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

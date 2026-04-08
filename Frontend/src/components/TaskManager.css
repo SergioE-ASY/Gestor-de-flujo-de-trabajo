@@ -15,11 +15,13 @@
 
   --accent: var(--accent-primary);
   --accent-hover: var(--accent-primary-hover);
-  --accent-light: var(--accent-primary-light);
+  --accent-light: var(--accent-primary-hover); /* FIX: sólido, no rgba */
   --accent-bg: var(--sidebar-active);
-  --accent-bg-hover: rgba(0, 229, 255, 0.25);
+  --accent-bg-hover: var(--accent-primary-light);
   --accent-secondary: var(--color-info-text);
-  --accent-gradient: var(--accent-gradient);
+  
+  /* Gradiente base (sólido en light para legibilidad) */
+  --accent-gradient: var(--accent-primary);
   --accent-shadow: var(--shadow-md);
 
   --text-heading: var(--foreground);
@@ -30,7 +32,12 @@
   --border: var(--border);
   --border-subtle: var(--border-hover);
 
-  --scrollbar-thumb: var(--accent-primary-light);
+  --scrollbar-thumb: var(--foreground-muted);
+}
+
+.dark {
+  /* Restaura el gradiente extremo en modo oscuro */
+  --accent-gradient: var(--accent-gradient-mixed);
 }
 
 /* ============================================================
@@ -86,7 +93,7 @@ button { font-family: inherit; }
 /* Buttons */
 .btn-primary {
   padding: 9px 26px; border-radius: 9px; cursor: pointer; border: none;
-  background: var(--accent-gradient); color: #fff;
+  background: var(--accent-gradient); color: #020617;
   font-size: 13px; font-weight: 700;
   box-shadow: 0 4px 16px var(--accent-shadow);
   transition: all 0.2s;
@@ -137,7 +144,7 @@ button { font-family: inherit; }
 .sidebar-cta {
   width: 100%; padding: 9px 0; border-radius: 8px;
   background: var(--accent-gradient); border: 1px solid rgba(255,255,255,0.2);
-  color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+  color: #020617; font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
   font-family: 'DM Mono', monospace; box-shadow: 0 4px 16px var(--accent-shadow);
 }
@@ -214,7 +221,7 @@ button { font-family: inherit; }
 .col-items { display: flex; flex-direction: column; gap: 10px; }
 .add-col-btn {
   width: 100%; padding: 12px; border-radius: 12px; border: 1px dashed var(--border-subtle);
-  background: transparent; color: var(--text-dim); font-size: 10px; cursor: pointer;
+  background: transparent; color: var(--foreground); font-size: 10px; cursor: pointer;
   font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
 }
 
@@ -349,7 +356,7 @@ button { font-family: inherit; }
 /* ============================================================
    FAB
    ============================================================ */
-.fab { position: fixed; bottom: 26px; right: 26px; width: 46px; height: 46px; border-radius: 50%; background: var(--accent-gradient); border: none; color: #fff; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px var(--accent-shadow); line-height: 1; transition: transform 0.15s; z-index: 40; }
+.fab { position: fixed; bottom: 26px; right: 26px; width: 46px; height: 46px; border-radius: 50%; background: var(--accent-gradient); border: none; color: #020617; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px var(--accent-shadow); line-height: 1; transition: transform 0.15s; z-index: 40; }
 .fab:hover { transform: scale(1.1); }
 
 /* ============================================================
