@@ -45,7 +45,6 @@ CREATE TABLE organizations (
 
 CREATE TABLE users (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
   name            VARCHAR(255) NOT NULL,
   email           VARCHAR(255) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
@@ -57,6 +56,20 @@ CREATE TABLE users (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at      TIMESTAMPTZ -- Soft delete
 );
+
+-- ============================================================
+-- ORGANIZATION USERS
+-- ============================================================
+
+CREATE TABLE organization_users (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role            user_role NOT NULL DEFAULT 'member',
+  joined_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (organization_id, user_id)
+);
+
 
 -- ============================================================
 -- PROJECTS
@@ -144,6 +157,8 @@ CREATE TABLE tags (
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name       VARCHAR(100) NOT NULL,
   color      VARCHAR(7) NOT NULL DEFAULT '#6366f1',
+    CONSTRAINT ck_color_hexadecimal 
+    CHECK (color ~* '^#[0-9A-F]{6}$')
   UNIQUE (project_id, name)
 );
 
@@ -255,9 +270,13 @@ FOR EACH ROW EXECUTE FUNCTION set_task_sequence();
 
 INSERT INTO organizations (id, name) VALUES ('00000000-0000-0000-0000-000000000001', 'Tech Corp');
 
-INSERT INTO users (id, organization_id, name, email, password_hash, role) VALUES
-  ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001', 'Admin', 'admin@tech.com', 'hash', 'admin'),
-  ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000001', 'Dev', 'dev@tech.com', 'hash', 'member');
+INSERT INTO users (id, name, email, password_hash, role) VALUES
+  ('00000000-0000-0000-0000-000000000010', 'Admin', 'admin@tech.com', 'hash', 'admin'),
+  ('00000000-0000-0000-0000-000000000011', 'Dev', 'dev@tech.com', 'hash', 'member');
+
+INSERT INTO organization_users (organization_id, user_id, role) VALUES
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', 'admin'),
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', 'member');
 
 INSERT INTO projects (id, organization_id, owner_id, key, name, status) VALUES
   ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', 'HGP', 'Herramienta de Gestión', 'active');
