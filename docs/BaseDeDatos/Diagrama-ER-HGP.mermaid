@@ -9,9 +9,16 @@ erDiagram
         TIMESTAMPTZ deleted_at
     }
 
-    USER {
+    ORGANIZATION_USER {
         UUID id PK
         UUID organization_id FK
+        UUID user_id FK
+        ENUM role
+        TIMESTAMPTZ joined_at
+    }
+
+    USER {
+        UUID id PK
         VARCHAR name
         VARCHAR email
         VARCHAR password_hash
@@ -117,7 +124,8 @@ erDiagram
     }
 
     %% Relaciones (Cardinalidad)
-    ORGANIZATION ||--o{ USER : "tiene"
+    ORGANIZATION ||--o{ ORGANIZATION_USER : "tiene miembros"
+    USER ||--o{ ORGANIZATION_USER : "pertenece a"
     ORGANIZATION ||--o{ PROJECT : "posee"
     
     USER ||--o{ PROJECT : "es dueño de (owner)"
