@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { User } = require('../server/db');
+const { User } = require('../db');
 const router = express.Router();
 
 // Configuración de Multer: Almacenar en memoria (Buffer)
@@ -56,6 +56,64 @@ router.get('/:id/avatar', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener avatar:', error);
     res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+// ======================
+// Rutas CRUD estándar
+// ======================
+
+router.get('/', async (req, res) => {
+  try {
+    const items = await User.findAll({ where: { deleted_at: null } });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const item = await User.findOne({ where: { id: req.params.id, deleted_at: null } });
+    if (!item) return res.status(404).json({ error: 'Not found' });
+    res.json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const item = await User.create(req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const item = await User.findByPk(req.params.id);
+    if (!item || item.deleted_at) return res.status(404).json({ error: 'Not found' });
+    await item.update(req.body);
+    res.json(item);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const item = await User.findByPk(req.params.id);
+    if (!item || item.deleted_at) return res.status(404).json({ error: 'Not found' });
+    
+    // Soft delete: actualizar deleted_at con la fecha del servidor
+    item.deleted_at = new Date();
+    await item.save();
+    
+    res.json({ message: 'Borrado lógico exitoso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
