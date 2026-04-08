@@ -3,12 +3,12 @@
 Este documento detalla las diferentes tecnologías que componen el **Gestor de Flujo de Trabajo**. El contenido sirve de referencia tanto para desarrolladores como para nuevos integrantes del proyecto.
 
 ## Interfaz de Usuario (Frontend)
-- **Framework principal:** (Por confirmar, ej. React / Next.js)
-- **Estilos:** (Por confirmar, ej. Vanilla CSS / Tailwind CSS)
+- **Framework principal:** React
+- **Estilos:** Tailwind CSS (aún no se ha confirmado)
 
 ## Servidor y API (Backend)
-- **Entorno de ejecución:** Node.js, Python u otro.
-- **Framework:** (Por confirmar, ej. Express, Django)
+- **Entorno de ejecución:** Node.js
+- **Framework:** Express
 
 ## Infraestructura y Orquestación
 El proyecto utiliza herramientas de contenedorización para homologar los entornos de desarrollo y producción:
@@ -16,8 +16,7 @@ El proyecto utiliza herramientas de contenedorización para homologar los entorn
 - **Docker Compose**
 
 ## Base de Datos
-- **Sistema de Gestión:** (Por confirmar, revisa también la carpeta `/docs/BaseDeDatos`)
-
+- **Sistema de Gestión:** PostgreSQL
 ---
 
 🔙 [Volver al README principal](../README.md)
