@@ -1,8 +1,26 @@
 import { Avatar } from "./Atoms";
 import { useData } from "./DataContext";
+import { useState, useEffect } from "react";
 
 export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { currentUser } = useData();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Opcional: revisar si ya estaba en modo oscuro (por clase o localStorage)
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    if (isDark) {
+      document.documentElement.classList.remove("dark");
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+    }
+  };
 
   return (
     <div className="topnav">
@@ -26,6 +44,9 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
       </div>
 
       <div className="topnav-right">
+        <button className="icon-btn" onClick={toggleDarkMode} title="Modo Oscuro/Claro">
+          {isDark ? "☀️" : "🌙"}
+        </button>
         <button className="icon-btn" style={{position:"relative"}}>
           🔔
           <span className="notif-dot" />

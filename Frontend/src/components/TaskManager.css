@@ -7,30 +7,30 @@
    CSS CUSTOM PROPERTIES — New Purple Palette
    ============================================================ */
 :root {
-  --bg-base: #0f0a1a;
-  --bg-surface: #1a1028;
-  --bg-card: #231836;
-  --bg-input: #170f26;
-  --bg-overlay: rgba(0,0,0,0.72);
+  --bg-base: var(--background);
+  --bg-surface: var(--sidebar-bg);
+  --bg-card: var(--card-bg);
+  --bg-input: var(--input-bg);
+  --bg-overlay: rgba(0,0,0,0.5);
 
-  --accent: #8b5cf6;
-  --accent-hover: #7c3aed;
-  --accent-light: #a78bfa;
-  --accent-bg: rgba(139,92,246,0.10);
-  --accent-bg-hover: rgba(139,92,246,0.18);
-  --accent-secondary: #06b6d4;
-  --accent-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  --accent-shadow: rgba(139,92,246,0.35);
+  --accent: var(--accent-primary);
+  --accent-hover: var(--accent-primary-hover);
+  --accent-light: var(--accent-primary-light);
+  --accent-bg: var(--sidebar-active);
+  --accent-bg-hover: rgba(0, 229, 255, 0.25);
+  --accent-secondary: var(--color-info-text);
+  --accent-gradient: var(--accent-gradient);
+  --accent-shadow: var(--shadow-md);
 
-  --text-heading: #f0edf6;
-  --text-body: #d4cde2;
-  --text-muted: #6b5f80;
-  --text-dim: #4a3d62;
+  --text-heading: var(--foreground);
+  --text-body: var(--foreground-secondary);
+  --text-muted: var(--foreground-muted);
+  --text-dim: var(--foreground-secondary);
 
-  --border: rgba(139,92,246,0.12);
-  --border-subtle: rgba(139,92,246,0.08);
+  --border: var(--border);
+  --border-subtle: var(--border-hover);
 
-  --scrollbar-thumb: rgba(139,92,246,0.15);
+  --scrollbar-thumb: var(--accent-primary-light);
 }
 
 /* ============================================================
