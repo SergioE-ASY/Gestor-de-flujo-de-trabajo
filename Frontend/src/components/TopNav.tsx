@@ -1,5 +1,5 @@
 import { Avatar } from "./Atoms";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 import { useState, useEffect } from "react";
 
 export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {

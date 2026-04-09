@@ -1,6 +1,6 @@
 import type { Task, User, Tag } from "./types";
 import { PriorityBadge, Avatar } from "./Atoms";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 
 export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t: Task) => void }) {
   const { getProjectById, getUserById, getTagById } = useData();

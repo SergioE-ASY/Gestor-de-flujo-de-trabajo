@@ -1,5 +1,5 @@
-import type { Task } from "./types";
-import { useData } from "./DataContext";
+import type { Task } from "../components/types";
+import { useData } from "../context/DataContext";
 
 const PRIORITY_COLOR: Record<string, string> = { low: "#64748b", medium: "#94a3b8", high: "#fbbf24", urgent: "#f87171" };
 const PRIORITY_LABEL: Record<string, string> = { low: "BAJA", medium: "MEDIA", high: "ALTA", urgent: "URGENTE" };

@@ -1,5 +1,5 @@
-import type { Task } from "./types";
-import { useData } from "./DataContext";
+import type { Task } from "../components/types";
+import { useData } from "../context/DataContext";
 
 const WORKLOAD_LABEL: Record<string, string> = { available: "DISPONIBLE", busy: "OCUPADO", critical: "CRÍTICO" };
 const WORKLOAD_COLOR: Record<string, string> = { available: "#34d399", busy: "#fbbf24", critical: "#f87171" };

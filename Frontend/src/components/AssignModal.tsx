@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Task } from "./types";
 import { PriorityBadge, Avatar } from "./Atoms";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 import { WORKLOAD_CFG } from "./constants";
 
 export default function AssignModal({ task, onClose, onConfirm }: { task: Task; onClose:()=>void; onConfirm:(payload:any)=>void }) {

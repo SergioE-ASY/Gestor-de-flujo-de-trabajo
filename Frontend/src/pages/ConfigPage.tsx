@@ -1,4 +1,4 @@
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 
 const ROLE_LABEL: Record<string, string>     = { executive: "Ejecutivo", manager: "Gerente", member: "Miembro" };
 const WORKLOAD_COLOR: Record<string, string> = { available: "#34d399", busy: "#fbbf24", critical: "#f87171" };

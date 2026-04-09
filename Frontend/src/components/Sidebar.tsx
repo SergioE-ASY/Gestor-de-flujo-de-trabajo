@@ -1,5 +1,5 @@
 import type { PageId } from "./types";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 
 export default function Sidebar({ activePage, setActivePage, isOpen, onClose }: { activePage: PageId, setActivePage: (p:PageId)=>void, isOpen: boolean, onClose: ()=>void }) {
   const { organization } = useData();

@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
-import "./TaskManager.css";
+import "../styles/TaskManager.css";
 import type { PageId, Task } from "./types";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 import KanbanBoard from "./KanbanBoard";
 import NewTaskForm from "./NewTaskForm";
 import AssignModal from "./AssignModal";
-import DashboardPage from "./DashboardPage";
-import CrmPage from "./CrmPage";
-import AnalyticsPage from "./AnalyticsPage";
-import TeamPage from "./TeamPage";
-import ConfigPage from "./ConfigPage";
+import DashboardPage from "../pages/DashboardPage";
+import CrmPage from "../pages/CrmPage";
+import AnalyticsPage from "../pages/AnalyticsPage";
+import TeamPage from "../pages/TeamPage";
+import ConfigPage from "../pages/ConfigPage";
 import { fetchAllData, updateTask, createTask } from "../api";
-import { DataProvider } from "./DataContext";
+import { DataProvider } from "../context/DataContext";
 
 export default function App() {
   const [page, setPage] = useState<PageId>("tasks");

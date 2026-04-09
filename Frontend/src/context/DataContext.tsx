@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { User, Project, Tag, Organization } from "./types";
+import type { User, Project, Tag, Organization } from "../components/types";
 
 interface DataContextType {
   users: User[];

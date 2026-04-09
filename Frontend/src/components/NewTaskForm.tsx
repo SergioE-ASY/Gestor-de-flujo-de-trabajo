@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Task, Priority } from "./types";
-import { useData } from "./DataContext";
+import { useData } from "../context/DataContext";
 
 export default function NewTaskForm({ onCancel, onCreate }: { onCancel:()=>void; onCreate:(t:Task)=>void }) {
   const { projects, tags } = useData();
