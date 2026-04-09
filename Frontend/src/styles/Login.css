@@ -4,9 +4,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f8fafc; /* Light default */
+  background: #f8fafc;
+  /* Light default */
   font-family: 'DM Sans', sans-serif;
-  color: #0f172a; /* Light default */
+  color: #0f172a;
+  /* Light default */
   padding: 20px;
   position: relative;
   overflow: hidden;
@@ -74,12 +76,15 @@
 .login-card {
   width: 100%;
   max-width: 420px;
-  background: rgba(255, 255, 255, 0.8); /* Light default */
+  background: rgba(255, 255, 255, 0.8);
+  /* Light default */
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.05); /* Light default */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  /* Light default */
   border-radius: 20px;
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05); /* Light default */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+  /* Light default */
   z-index: 10;
   animation: loginFadeIn 0.8s ease-out;
 }
@@ -91,8 +96,15 @@
 }
 
 @keyframes loginFadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-card-header {
@@ -104,7 +116,8 @@
   font-size: 24px;
   font-weight: 800;
   margin-bottom: 8px;
-  color: #0f172a; /* Light default */
+  color: #0f172a;
+  /* Light default */
 }
 
 :root.dark .login-card-title {
@@ -127,6 +140,18 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.login-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 480px) {
+  .login-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .login-label {
@@ -153,11 +178,14 @@
 
 .login-input {
   width: 100%;
-  background: #f1f5f9; /* Light default */
-  border: 1px solid #e2e8f0; /* Light default */
+  background: #f1f5f9;
+  /* Light default */
+  border: 1px solid #e2e8f0;
+  /* Light default */
   border-radius: 10px;
   padding: 12px 14px 12px 40px;
-  color: #0f172a; /* Light default */
+  color: #0f172a;
+  /* Light default */
   font-size: 14px;
   transition: all 0.2s;
 }

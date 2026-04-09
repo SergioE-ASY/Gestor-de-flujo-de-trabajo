@@ -54,6 +54,17 @@
       "role": "member",
       "avatar_color": "#d946ef",
       "workload": "busy"
+    },
+    {
+      "id": "66KrSzegBI0",
+      "name": "Pepe perez",
+      "username": "pepe.perez",
+      "password": "1234",
+      "role": "member",
+      "initials": "PP",
+      "avatar_color": "hsl(265, 70%, 60%)",
+      "email": "pepe.perez@kinetic.cmd",
+      "status": "active"
     }
   ],
   "projects": [

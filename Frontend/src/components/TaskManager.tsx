@@ -13,21 +13,36 @@ import AnalyticsPage from "../pages/AnalyticsPage";
 import TeamPage from "../pages/TeamPage";
 import ConfigPage from "../pages/ConfigPage";
 import LoginPage from "../pages/LoginPage";
+import SignupPage from "../pages/SignupPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import { fetchAllData, updateTask, createTask } from "../api";
 import { DataProvider, useData } from "../context/DataContext";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { currentUser } = useData();
-  const location = useLocation();
+  const { pathname } = useLocation();
+  
+  // Normalize pathname to remove trailing slashes for comparison
+  const normalizedPath = pathname.endsWith('/') && pathname.length > 1 
+    ? pathname.slice(0, -1) 
+    : pathname;
 
-  if (!currentUser && location.pathname !== "/login") {
+  const publicPaths = ["/login", "/signup", "/forgot-password"];
+  const isPublic = publicPaths.includes(normalizedPath);
+
+  console.log(`[AuthGuard] User: ${currentUser?.username || 'None'} | Path: ${normalizedPath} | Public: ${isPublic}`);
+
+  // 1. If not logged in and trying to access private area -> Redirect to Login
+  if (!currentUser && !isPublic) {
     return <Navigate to="/login" replace />;
   }
 
-  if (currentUser && location.pathname === "/login") {
+  // 2. If logged in and trying to access Auth pages -> Redirect to Dashboard
+  if (currentUser && isPublic) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // 3. Otherwise, allow access
   return <>{children}</>;
 }
 
@@ -136,6 +151,8 @@ export default function App() {
     <DataProvider users={dbData.users} projects={dbData.projects} tags={dbData.tags} organization={dbData.organization}>
       <Routes>
         <Route path="/login" element={<AuthGuard><LoginPage /></AuthGuard>} />
+        <Route path="/signup" element={<AuthGuard><SignupPage /></AuthGuard>} />
+        <Route path="/forgot-password" element={<AuthGuard><ForgotPasswordPage /></AuthGuard>} />
         <Route path="*" element={<AuthGuard><MainApp dbData={dbData} /></AuthGuard>} />
       </Routes>
     </DataProvider>

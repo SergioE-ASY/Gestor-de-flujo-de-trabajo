@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useData } from "../context/DataContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 
 export default function LoginPage() {
@@ -104,9 +104,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="login-footer-links">
-          <a href="#" className="login-link">¿Olvidaste tu contraseña?</a>
-          <p className="login-link muted">¿No tienes una cuenta? <a href="#" className="login-link"><span>Crear una cuenta</span></a></p>
+           <div className="login-footer-links">
+          <Link to="/forgot-password" style={{textDecoration: 'none'}} className="login-link">¿Olvidaste tu contraseña?</Link>
+          <p className="login-link muted">¿No tienes una cuenta? <Link to="/signup" className="login-link"><span>Crear una cuenta</span></Link></p>
         </div>
       </main>
 

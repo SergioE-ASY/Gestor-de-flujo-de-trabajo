@@ -37,3 +37,12 @@ export async function updateTask(id: string, payload: Partial<Task>): Promise<Ta
   });
   return res.json();
 }
+
+export async function signupUser(user: User): Promise<User> {
+  const res = await fetch(`${API_URL}/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user),
+  });
+  return res.json();
+}
