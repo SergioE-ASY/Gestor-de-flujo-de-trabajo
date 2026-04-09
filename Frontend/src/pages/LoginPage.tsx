@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useData } from "../context/DataContext";
 import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
@@ -10,6 +10,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    if (isDark) {
+      document.documentElement.classList.remove("dark");
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      setIsDark(true);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +55,8 @@ export default function LoginPage() {
         <div className="login-logo-text">COMMAND</div>
       </header>
 
-      <button className="theme-toggle-login">
-        <span>☼</span>
+      <button className="theme-toggle-login" onClick={toggleDarkMode}>
+        <span>{isDark ? "☼" : "☾"}</span>
       </button>
 
       <main className="login-card">
