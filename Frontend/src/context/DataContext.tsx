@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User, Project, Tag, Organization } from "../components/types";
 import { signupUser } from "../api";
@@ -19,6 +19,14 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Normalize a user to ensure required fields always exist (handles legacy/signup users)
+const normalizeUser = (u: User): User => ({
+  workload: "available" as any,
+  status: "active",
+  email: `${u.username ?? u.id}@kinetic.cmd`,
+  ...u,
+});
+
 export const DataProvider = ({ 
   children, users: initialUsers, projects, tags, organization 
 }: { 
@@ -28,7 +36,7 @@ export const DataProvider = ({
   tags: Tag[];
   organization: Organization;
 }) => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>(initialUsers.map(normalizeUser));
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem("obsidian_user");
     return saved ? JSON.parse(saved) : null;
@@ -49,14 +57,12 @@ export const DataProvider = ({
   };
 
   const logout = () => {
-    console.log("DataContext logout called");
     setCurrentUser(null);
     localStorage.removeItem("obsidian_user");
   };
 
   const signup = async (userData: Partial<User>) => {
     try {
-      // Basic validation
       if (!userData.username || !userData.password || !userData.name) return null;
 
       const newUser: User = {
@@ -64,18 +70,20 @@ export const DataProvider = ({
         name: userData.name,
         username: userData.username,
         password: userData.password,
-        role: "member", // Default role
-        initials: userData.name.split(" ").map(n => n[0]).join("").toUpperCase(),
-        avatar_color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`, // Random color
+        role: "member",
+        initials: userData.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
+        avatar_color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`,
+        workload: "available" as any,
         email: `${userData.username}@kinetic.cmd`,
-        status: "active"
+        status: "active",
       };
 
       const savedUser = await signupUser(newUser);
-      setUsers(prev => [...prev, savedUser]);
-      setCurrentUser(savedUser);
-      localStorage.setItem("obsidian_user", JSON.stringify(savedUser));
-      return savedUser;
+      const normalized = normalizeUser(savedUser);
+      setUsers(prev => [...prev, normalized]);
+      setCurrentUser(normalized);
+      localStorage.setItem("obsidian_user", JSON.stringify(normalized));
+      return normalized;
     } catch (err) {
       console.error("Signup failed:", err);
       return null;

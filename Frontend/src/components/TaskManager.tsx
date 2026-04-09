@@ -55,8 +55,9 @@ function MainApp({ dbData }: { dbData: any }) {
   const handleAssignConfirm = async ({ taskId, assignee_id, estimated_min, due_date }: any) => {
     try {
       const payload = { assignee_id, estimated_min, due_date, _ui_column: "assigned" as any, status: "in_progress" as any };
-      const updated = await updateTask(taskId, payload);
-      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+      await updateTask(taskId, payload);
+      // Merge instead of replace to avoid losing fields the API doesn't return
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...payload } : t));
       setAssign(null);
     } catch (err) {
       console.error(err);
@@ -82,8 +83,10 @@ function MainApp({ dbData }: { dbData: any }) {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, _ui_column: targetCol } : t));
 
     try {
-      const updated = await updateTask(taskId, { _ui_column: targetCol, status: statusMap[targetCol] as any });
-      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+      const patch = { _ui_column: targetCol, status: statusMap[targetCol] as any };
+      await updateTask(taskId, patch);
+      // Merge instead of replace — the PATCH response may omit fields like tags/_extra_assignees
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...patch } : t));
     } catch (err) {
       console.error(err);
       setTasks(prev => prev.map(t => t.id === taskId ? task : t));

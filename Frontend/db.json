@@ -142,13 +142,13 @@
       "type": "task",
       "title": "Auditoría Financiera Estratégica Q4 y Revisión de Cumplimiento",
       "description": "",
-      "status": "done",
+      "status": "in_progress",
       "priority": "high",
       "position": 0,
       "estimated_min": 2400,
       "due_date": "2024-01-20",
       "completed_at": null,
-      "_ui_column": "completed",
+      "_ui_column": "assigned",
       "_extra_assignees": [
         "usr-003"
       ],
@@ -167,13 +167,13 @@
       "type": "feature",
       "title": "Integración de CRM y Optimización de Sincronización API",
       "description": "",
-      "status": "todo",
+      "status": "in_progress",
       "priority": "medium",
       "position": 1,
       "estimated_min": 3000,
       "due_date": "2024-02-18",
       "completed_at": null,
-      "_ui_column": "pending",
+      "_ui_column": "assigned",
       "_extra_assignees": [],
       "tags": [
         "tag-003"
@@ -236,10 +236,10 @@
       "project_sequence": 99,
       "position": 99,
       "estimated_min": 960,
-      "status": "in_progress",
+      "status": "done",
       "completed_at": null,
       "type": "task",
-      "_ui_column": "assigned",
+      "_ui_column": "completed",
       "_extra_assignees": []
     },
     {

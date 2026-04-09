@@ -46,7 +46,7 @@ export default function AssignModal({ task, onClose, onConfirm }: { task: Task; 
             </div>
             <div className="modal-grid2">
               {users.filter(u => u.id !== currentUser?.id).map(user => {
-                const wl = WORKLOAD_CFG[user.workload];
+                const wl = WORKLOAD_CFG[user.workload ?? "available"] ?? WORKLOAD_CFG["available"];
                 const sel = selectedUserId === user.id;
                 return (
                   <button key={user.id} className={`user-select-btn ${sel?'active':''}`} onClick={() => setSelectedUserId(user.id)}>
