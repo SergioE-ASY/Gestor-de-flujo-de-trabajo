@@ -93,8 +93,8 @@ export default function ConfigPage() {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 9, color: WORKLOAD_COLOR[user.workload], fontFamily: "'DM Mono',monospace" }}>
-                        ● {user.workload.toUpperCase()}
+                      <span style={{ fontSize: 9, color: WORKLOAD_COLOR[user.workload ?? "available"] ?? "#34d399", fontFamily: "'DM Mono',monospace" }}>
+                        ● {(user.workload ?? "available").toUpperCase()}
                       </span>
                       <button className="crm-detail-btn">EDITAR</button>
                     </div>
