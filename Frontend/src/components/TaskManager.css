@@ -230,11 +230,28 @@ button { font-family: inherit; }
    ============================================================ */
 .task-card {
   background: var(--bg-card); border: 1px solid var(--border-subtle);
-  border-radius: 12px; padding: 14px; transition: border-color 0.15s; cursor: default;
+  border-radius: 12px; padding: 14px; transition: border-color 0.15s, opacity 0.2s, transform 0.2s, box-shadow 0.2s; cursor: grab;
 }
 .task-card:hover { border-color: var(--border-active); }
 .task-card.completed { opacity: 0.6; background: rgba(0,0,0,0.1); }
 .task-card.completed:hover { border-color: var(--border-subtle); }
+
+/* Estado al ser arrastrada */
+.task-card.dragging {
+  opacity: 0.35;
+  transform: scale(0.97) rotate(-1deg);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  cursor: grabbing;
+}
+
+/* Columna resaltada cuando se pasa una tarjeta por encima */
+.kanban-column.drag-over {
+  background: rgba(139, 92, 246, 0.06);
+  border-radius: 14px;
+  outline: 2px dashed var(--accent-light);
+  outline-offset: -2px;
+  transition: background 0.15s, outline 0.15s;
+}
 
 .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .card-completed-badge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: #34d399; font-family: 'DM Mono', monospace; }

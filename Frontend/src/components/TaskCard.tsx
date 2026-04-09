@@ -18,8 +18,25 @@ export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t:
     daysLeft = Math.ceil((new Date(task.due_date).getTime() - new Date().getTime()) / 86400000);
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("taskId", task.id);
+    // Añadimos una clase temporal al body o directamente manejamos estilos
+    setTimeout(() => {
+      if (e.target instanceof HTMLElement) e.target.classList.add("dragging");
+    }, 0);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    if (e.target instanceof HTMLElement) e.target.classList.remove("dragging");
+  };
+
   return (
-    <div className={`task-card ${isCompleted ? 'completed' : ''}`}>
+    <div 
+      className={`task-card ${isCompleted ? 'completed' : ''}`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="card-top">
         {isCompleted
           ? <span className="card-completed-badge"><span className="check">✓</span> COMPLETADO</span>

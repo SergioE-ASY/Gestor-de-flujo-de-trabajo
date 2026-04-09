@@ -1,12 +1,33 @@
 import type { Task, UIColumn } from "./types";
 import TaskCard from "./TaskCard";
 
-export default function KanbanBoard({ tasks, onNewTask, onAssign }: { tasks: Task[]; onNewTask:()=>void; onAssign:(t:Task)=>void }) {
+export default function KanbanBoard({ tasks, onNewTask, onAssign, onTaskMove }: { tasks: Task[]; onNewTask:()=>void; onAssign:(t:Task)=>void; onTaskMove:(taskId:string, targetCol:UIColumn)=>void }) {
   const columns: { id: UIColumn; label: string; items: Task[] }[] = [
     { id: "assigned",  label: "TAREAS ASIGNADAS",     items: tasks.filter(t => t._ui_column === "assigned") },
     { id: "completed", label: "TAREAS COMPLETADAS",    items: tasks.filter(t => t._ui_column === "completed") },
     { id: "pending",   label: "PENDIENTES DE ASIGNAR", items: tasks.filter(t => t._ui_column === "pending") },
   ];
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Necesario para permitir el soltado
+    const target = e.currentTarget as HTMLElement;
+    if (!target.classList.contains("drag-over")) {
+      target.classList.add("drag-over");
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove("drag-over");
+  };
+
+  const handleDrop = (e: React.DragEvent, colId: UIColumn) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove("drag-over");
+    const taskId = e.dataTransfer.getData("taskId");
+    if (taskId) {
+      onTaskMove(taskId, colId);
+    }
+  };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", flex:1, overflow:"hidden" }}>
@@ -27,7 +48,13 @@ export default function KanbanBoard({ tasks, onNewTask, onAssign }: { tasks: Tas
 
       <div className="kanban-columns">
         {columns.map((col) => (
-          <div key={col.id} className="kanban-column">
+          <div 
+            key={col.id} 
+            className="kanban-column"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, col.id)}
+          >
             <div className="col-header">
               <span className="col-label">{col.label}</span>
               <span className="col-count">/ {String(col.items.length).padStart(2, "0")}</span>

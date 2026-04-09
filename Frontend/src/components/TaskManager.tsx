@@ -44,6 +44,37 @@ export default function App() {
     }
   };
 
+  const handleTaskMove = async (taskId: string, targetCol: any) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task._ui_column === targetCol) return;
+
+    // Si se mueve a "asignadas" y no tiene responsable, abrir el modal
+    if (targetCol === "assigned" && !task.assignee_id) {
+      setAssign(task);
+      return;
+    }
+
+    // Determinar el nuevo status según la columna destino
+    const statusMap: Record<string, string> = {
+      assigned: "in_progress",
+      completed: "done",
+      pending: "todo",
+    };
+
+    // Actualización optimista del estado local
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, _ui_column: targetCol } : t));
+
+    try {
+      const updated = await updateTask(taskId, { _ui_column: targetCol, status: statusMap[targetCol] as any });
+      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+    } catch (err) {
+      console.error(err);
+      // Revertir en caso de error
+      setTasks(prev => prev.map(t => t.id === taskId ? task : t));
+      alert("Error al mover la tarea");
+    }
+  };
+
   if (loading) return <div className="app-shell" style={{justifyContent:"center", alignItems:"center", color:"var(--text-dim)"}}>Cargando obsidian...</div>;
   if (error) return <div className="app-shell" style={{justifyContent:"center", alignItems:"center", color:"var(--color-error)"}}>{error}</div>;
 
@@ -56,7 +87,7 @@ export default function App() {
           <TopNav onMenuToggle={() => setSidebarOpen(true)} />
 
           <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-            {page === "tasks" && <KanbanBoard tasks={tasks} onNewTask={() => setPage("new-task")} onAssign={setAssign} />}
+            {page === "tasks" && <KanbanBoard tasks={tasks} onNewTask={() => setPage("new-task")} onAssign={setAssign} onTaskMove={handleTaskMove} />}
             {page === "new-task" && <NewTaskForm onCancel={() => setPage("tasks")} onCreate={async (t: Task) => { 
                 try {
                   const saved = await createTask(t);
