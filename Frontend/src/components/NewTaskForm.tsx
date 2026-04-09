@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Task, Priority } from "./types";
 import { useData } from "../context/DataContext";
 
-export default function NewTaskForm({ onCancel, onCreate }: { onCancel:()=>void; onCreate:(t:Task)=>void }) {
+export default function NewTaskForm({ onCreate }: { onCreate:(t:Task)=>void }) {
   const { projects, tags } = useData();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     title: "", description: "", project_id: projects[0]?.id || "", due_date: "", priority: "high" as Priority, tags: [] as string[],
   });
@@ -89,7 +91,7 @@ export default function NewTaskForm({ onCancel, onCreate }: { onCancel:()=>void;
         </div>
 
         <div className="newtask-footer">
-          <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
+          <button className="btn-secondary" onClick={() => navigate("/tasks")}>Cancelar</button>
           <button className={`btn-primary ${!form.title?'disabled':''}`} onClick={handleSubmit} disabled={!form.title}>Crear Tarea</button>
         </div>
       </div>

@@ -1,16 +1,17 @@
-import type { PageId } from "./types";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
 
-export default function Sidebar({ activePage, setActivePage, isOpen, onClose }: { activePage: PageId, setActivePage: (p:PageId)=>void, isOpen: boolean, onClose: ()=>void }) {
+export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: ()=>void }) {
   const { organization } = useData();
+  const navigate = useNavigate();
 
-  const nav: { id: PageId; icon: string; label: string }[] = [
-    { id: "dashboard", icon: "⊞", label: "ESCRITORIO" },
-    { id: "tasks",     icon: "☰", label: "TAREAS" },
-    { id: "crm",       icon: "◈", label: "PIPELINE CRM" },
-    { id: "analytics", icon: "∿", label: "ANALÍTICAS" },
-    { id: "team",      icon: "◎", label: "EQUIPO" },
-    { id: "config",    icon: "⚙", label: "CONFIGURACIÓN" },
+  const nav = [
+    { path: "/dashboard", icon: "⊞", label: "ESCRITORIO" },
+    { path: "/tasks",     icon: "☰", label: "TAREAS" },
+    { path: "/crm",       icon: "◈", label: "PIPELINE CRM" },
+    { path: "/analytics", icon: "∿", label: "ANALÍTICAS" },
+    { path: "/team",      icon: "◎", label: "EQUIPO" },
+    { path: "/config",    icon: "⚙", label: "CONFIGURACIÓN" },
   ];
 
   return (
@@ -26,7 +27,7 @@ export default function Sidebar({ activePage, setActivePage, isOpen, onClose }: 
         </div>
 
         <div style={{ padding: "0 12px 16px" }}>
-          <button className="sidebar-cta" onClick={() => { setActivePage("new-task"); onClose(); }}>
+          <button className="sidebar-cta" onClick={() => { navigate("/tasks/new"); onClose(); }}>
             <span className="sidebar-cta-icon">+</span>
             <span className="sidebar-cta-text">NUEVA SOLICITUD</span>
           </button>
@@ -34,10 +35,15 @@ export default function Sidebar({ activePage, setActivePage, isOpen, onClose }: 
 
         <nav style={{ flex: 1, padding: "0 8px" }}>
           {nav.map(item => (
-            <button key={item.id} className={`nav-btn ${activePage === item.id ? 'active' : ''}`} onClick={() => { setActivePage(item.id); onClose(); }}>
+            <NavLink 
+              key={item.path} 
+              to={item.path} 
+              className={({ isActive }) => `nav-btn ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
               <span className="nav-icon">{item.icon}</span>
               <span className="sidebar-label">{item.label}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
 

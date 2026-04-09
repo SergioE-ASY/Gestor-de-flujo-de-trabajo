@@ -23,7 +23,7 @@ const PROJECT_STAGE: Record<string, string> = {
 };
 
 export default function CrmPage({ tasks }: { tasks: Task[] }) {
-  const { projects, users, getProjectById } = useData();
+  const { projects, users } = useData();
 
   const stageProjects = STAGES.map(stage => ({
     ...stage,

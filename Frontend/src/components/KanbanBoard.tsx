@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import type { Task, UIColumn } from "./types";
 import TaskCard from "./TaskCard";
 
-export default function KanbanBoard({ tasks, onNewTask, onAssign, onTaskMove }: { tasks: Task[]; onNewTask:()=>void; onAssign:(t:Task)=>void; onTaskMove:(taskId:string, targetCol:UIColumn)=>void }) {
+export default function KanbanBoard({ tasks, onAssign, onTaskMove }: { tasks: Task[]; onAssign:(t:Task)=>void; onTaskMove:(taskId:string, targetCol:UIColumn)=>void }) {
+  const navigate = useNavigate();
   const columns: { id: UIColumn; label: string; items: Task[] }[] = [
     { id: "assigned",  label: "TAREAS ASIGNADAS",     items: tasks.filter(t => t._ui_column === "assigned") },
     { id: "completed", label: "TAREAS COMPLETADAS",    items: tasks.filter(t => t._ui_column === "completed") },
@@ -9,7 +11,7 @@ export default function KanbanBoard({ tasks, onNewTask, onAssign, onTaskMove }: 
   ];
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necesario para permitir el soltado
+    e.preventDefault(); 
     const target = e.currentTarget as HTMLElement;
     if (!target.classList.contains("drag-over")) {
       target.classList.add("drag-over");
@@ -61,13 +63,17 @@ export default function KanbanBoard({ tasks, onNewTask, onAssign, onTaskMove }: 
             </div>
             <div className="col-items">
               {col.items.map(task => <TaskCard key={task.id} task={task} onAssign={onAssign} />)}
-              {col.id === "pending" && <button className="add-col-btn">+ AÑADIR TAREA</button>}
+              {col.id === "pending" && (
+                <button className="add-col-btn" onClick={() => navigate("/tasks/new")}>
+                  + AÑADIR TAREA
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <button className="fab" onClick={onNewTask}>+</button>
+      <button className="fab" onClick={() => navigate("/tasks/new")}>+</button>
     </div>
   );
 }

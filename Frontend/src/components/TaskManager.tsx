@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import "../styles/TaskManager.css";
-import type { PageId, Task } from "./types";
+import type { Task } from "./types";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 import KanbanBoard from "./KanbanBoard";
@@ -15,13 +16,13 @@ import { fetchAllData, updateTask, createTask } from "../api";
 import { DataProvider } from "../context/DataContext";
 
 export default function App() {
-  const [page, setPage] = useState<PageId>("tasks");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignTarget, setAssign] = useState<Task | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dbData, setDbData] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAllData()
@@ -53,20 +54,17 @@ export default function App() {
     const task = tasks.find(t => t.id === taskId);
     if (!task || task._ui_column === targetCol) return;
 
-    // Si se mueve a "asignadas" y no tiene responsable, abrir el modal
     if (targetCol === "assigned" && !task.assignee_id) {
       setAssign(task);
       return;
     }
 
-    // Determinar el nuevo status según la columna destino
     const statusMap: Record<string, string> = {
       assigned: "in_progress",
       completed: "done",
       pending: "todo",
     };
 
-    // Actualización optimista del estado local
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, _ui_column: targetCol } : t));
 
     try {
@@ -74,7 +72,6 @@ export default function App() {
       setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
     } catch (err) {
       console.error(err);
-      // Revertir en caso de error
       setTasks(prev => prev.map(t => t.id === taskId ? task : t));
       alert("Error al mover la tarea");
     }
@@ -86,28 +83,31 @@ export default function App() {
   return (
     <DataProvider users={dbData.users} projects={dbData.projects} tags={dbData.tags} organization={dbData.organization}>
       <div className="app-shell">
-        <Sidebar activePage={page} setActivePage={setPage} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <TopNav onMenuToggle={() => setSidebarOpen(true)} />
 
           <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-            {page === "tasks" && <KanbanBoard tasks={tasks} onNewTask={() => setPage("new-task")} onAssign={setAssign} onTaskMove={handleTaskMove} />}
-            {page === "new-task" && <NewTaskForm onCancel={() => setPage("tasks")} onCreate={async (t: Task) => { 
-                try {
-                  const saved = await createTask(t);
-                  setTasks([...tasks, saved]); 
-                  setPage("tasks"); 
-                } catch(e) {
-                  console.error(e);
-                  alert("Failed to create task");
-                }
-            }} />}
-            {page === "dashboard"  && <DashboardPage tasks={tasks} />}
-            {page === "crm"        && <CrmPage tasks={tasks} />}
-            {page === "analytics"  && <AnalyticsPage tasks={tasks} />}
-            {page === "team"       && <TeamPage tasks={tasks} />}
-            {page === "config"     && <ConfigPage />}
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage tasks={tasks} />} />
+              <Route path="/tasks" element={<KanbanBoard tasks={tasks} onAssign={setAssign} onTaskMove={handleTaskMove} />} />
+              <Route path="/tasks/new" element={<NewTaskForm onCreate={async (t: Task) => { 
+                  try {
+                    const saved = await createTask(t);
+                    setTasks([...tasks, saved]); 
+                    navigate("/tasks"); 
+                  } catch(e) {
+                    console.error(e);
+                    alert("Failed to create task");
+                  }
+              }} />} />
+              <Route path="/crm" element={<CrmPage tasks={tasks} />} />
+              <Route path="/analytics" element={<AnalyticsPage tasks={tasks} />} />
+              <Route path="/team" element={<TeamPage tasks={tasks} />} />
+              <Route path="/config" element={<ConfigPage />} />
+            </Routes>
           </div>
         </div>
 
