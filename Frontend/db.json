@@ -8,6 +8,8 @@
     {
       "id": "usr-001",
       "name": "Alexander Thorne",
+      "username": "alexander.thorne",
+      "password": "password123",
       "initials": "AT",
       "role": "executive",
       "avatar_color": "#7c3aed",
@@ -16,6 +18,8 @@
     {
       "id": "usr-002",
       "name": "Marcos Silva",
+      "username": "marcos.silva",
+      "password": "password123",
       "initials": "MS",
       "role": "manager",
       "avatar_color": "#8b5cf6",
@@ -24,6 +28,8 @@
     {
       "id": "usr-003",
       "name": "Elena Rojas",
+      "username": "elena.rojas",
+      "password": "password123",
       "initials": "ER",
       "role": "member",
       "avatar_color": "#317a7c",
@@ -32,6 +38,8 @@
     {
       "id": "usr-004",
       "name": "Luis Pérez",
+      "username": "luis.perez",
+      "password": "password123",
       "initials": "LP",
       "role": "member",
       "avatar_color": "#317a7c",
@@ -40,6 +48,8 @@
     {
       "id": "usr-005",
       "name": "Ana Torres",
+      "username": "ana.torres",
+      "password": "password123",
       "initials": "AT2",
       "role": "member",
       "avatar_color": "#d946ef",

@@ -660,3 +660,39 @@ button { font-family: inherit; }
   .config-nav { width: 100%; flex-direction: row; flex-wrap: wrap; }
 }
 
+
+/* ============================================================
+   TOOLTIPS — Custom Obsidian Style
+   ============================================================ */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-heading);
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 1000;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+[data-tooltip]:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

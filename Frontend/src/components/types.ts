@@ -7,7 +7,7 @@ export type UIColumn = "assigned" | "completed" | "pending";
 export type PageId = "dashboard" | "tasks" | "crm" | "analytics" | "team" | "config" | "new-task";
 
 export interface Organization { id: string; name: string; tier: string; }
-export interface User { id: string; name: string; initials: string; role: UserRole; avatar_color: string; workload: Workload; }
+export interface User { id: string; name: string; username?: string; password?: string; initials: string; role: UserRole; avatar_color: string; workload: Workload; }
 export interface Project { id: string; name: string; key: string; priority: Priority; }
 export interface Tag { id: string; project_id: string; name: string; color: string; }
 

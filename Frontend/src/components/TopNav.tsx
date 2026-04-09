@@ -1,13 +1,14 @@
 import { Avatar } from "./Atoms";
 import { useData } from "../context/DataContext";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
-  const { currentUser } = useData();
+  const { currentUser, logout } = useData();
   const [isDark, setIsDark] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Opcional: revisar si ya estaba en modo oscuro (por clase o localStorage)
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
   }, []);
@@ -20,6 +21,18 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
       document.documentElement.classList.add("dark");
       setIsDark(true);
     }
+  };
+
+  const handleLogout = () => {
+    console.log("handleLogout called in TopNav");
+    logout();
+    navigate("/login");
+  };
+
+  const roleLabels: Record<string, string> = {
+    executive: "Chief Executive",
+    manager: "Project Manager",
+    member: "Team Specialist"
   };
 
   return (
@@ -51,12 +64,19 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
           🔔
           <span className="notif-dot" />
         </button>
-        <button className="icon-btn">↺</button>
+        <button 
+          className="icon-btn" 
+          onClick={handleLogout} 
+          data-tooltip="Cerrar Sesión"
+          style={{ fontSize: '18px', padding: '4px' }}
+        >
+          🚪
+        </button>
         <div className="topnav-user">
           {currentUser && <Avatar user={currentUser} size={30} />}
           <div className="topnav-user-name">
             <p className="user-title">{currentUser?.name}</p>
-            <p className="user-subtitle">Chief Executive</p>
+            <p className="user-subtitle">{currentUser ? roleLabels[currentUser.role] : "Guest"}</p>
           </div>
         </div>
       </div>

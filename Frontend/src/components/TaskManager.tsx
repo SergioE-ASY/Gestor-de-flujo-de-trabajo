@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import "../styles/TaskManager.css";
 import type { Task } from "./types";
 import Sidebar from "./Sidebar";
@@ -12,31 +12,30 @@ import CrmPage from "../pages/CrmPage";
 import AnalyticsPage from "../pages/AnalyticsPage";
 import TeamPage from "../pages/TeamPage";
 import ConfigPage from "../pages/ConfigPage";
+import LoginPage from "../pages/LoginPage";
 import { fetchAllData, updateTask, createTask } from "../api";
-import { DataProvider } from "../context/DataContext";
+import { DataProvider, useData } from "../context/DataContext";
 
-export default function App() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useData();
+  const location = useLocation();
+
+  if (!currentUser && location.pathname !== "/login") {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (currentUser && location.pathname === "/login") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function MainApp({ dbData }: { dbData: any }) {
+  const [tasks, setTasks] = useState<Task[]>(dbData.tasks);
   const [assignTarget, setAssign] = useState<Task | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [dbData, setDbData] = useState<any>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchAllData()
-      .then((data) => {
-        setDbData(data);
-        setTasks(data.tasks);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError("Error loading data. json-server may not be running.");
-        setLoading(false);
-      });
-  }, []);
 
   const handleAssignConfirm = async ({ taskId, assignee_id, estimated_min, due_date }: any) => {
     try {
@@ -77,42 +76,68 @@ export default function App() {
     }
   };
 
+  return (
+    <div className="app-shell">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <TopNav onMenuToggle={() => setSidebarOpen(true)} />
+
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage tasks={tasks} />} />
+            <Route path="/tasks" element={<KanbanBoard tasks={tasks} onAssign={setAssign} onTaskMove={handleTaskMove} />} />
+            <Route path="/tasks/new" element={<NewTaskForm onCreate={async (t: Task) => { 
+                try {
+                  const saved = await createTask(t);
+                  setTasks([...tasks, saved]); 
+                  navigate("/tasks"); 
+                } catch(e) {
+                  console.error(e);
+                  alert("Failed to create task");
+                }
+            }} />} />
+            <Route path="/crm" element={<CrmPage tasks={tasks} />} />
+            <Route path="/analytics" element={<AnalyticsPage tasks={tasks} />} />
+            <Route path="/team" element={<TeamPage tasks={tasks} />} />
+            <Route path="/config" element={<ConfigPage />} />
+          </Routes>
+        </div>
+      </div>
+
+      {assignTarget && <AssignModal task={assignTarget} onClose={() => setAssign(null)} onConfirm={handleAssignConfirm} />}
+    </div>
+  );
+}
+
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [dbData, setDbData] = useState<any>(null);
+
+  useEffect(() => {
+    fetchAllData()
+      .then((data) => {
+        setDbData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError("Error loading data. json-server may not be running.");
+        setLoading(false);
+      });
+  }, []);
+
   if (loading) return <div className="app-shell" style={{justifyContent:"center", alignItems:"center", color:"var(--text-dim)"}}>Cargando obsidian...</div>;
   if (error) return <div className="app-shell" style={{justifyContent:"center", alignItems:"center", color:"var(--color-error)"}}>{error}</div>;
 
   return (
     <DataProvider users={dbData.users} projects={dbData.projects} tags={dbData.tags} organization={dbData.organization}>
-      <div className="app-shell">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <TopNav onMenuToggle={() => setSidebarOpen(true)} />
-
-          <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage tasks={tasks} />} />
-              <Route path="/tasks" element={<KanbanBoard tasks={tasks} onAssign={setAssign} onTaskMove={handleTaskMove} />} />
-              <Route path="/tasks/new" element={<NewTaskForm onCreate={async (t: Task) => { 
-                  try {
-                    const saved = await createTask(t);
-                    setTasks([...tasks, saved]); 
-                    navigate("/tasks"); 
-                  } catch(e) {
-                    console.error(e);
-                    alert("Failed to create task");
-                  }
-              }} />} />
-              <Route path="/crm" element={<CrmPage tasks={tasks} />} />
-              <Route path="/analytics" element={<AnalyticsPage tasks={tasks} />} />
-              <Route path="/team" element={<TeamPage tasks={tasks} />} />
-              <Route path="/config" element={<ConfigPage />} />
-            </Routes>
-          </div>
-        </div>
-
-        {assignTarget && <AssignModal task={assignTarget} onClose={() => setAssign(null)} onConfirm={handleAssignConfirm} />}
-      </div>
+      <Routes>
+        <Route path="/login" element={<AuthGuard><LoginPage /></AuthGuard>} />
+        <Route path="*" element={<AuthGuard><MainApp dbData={dbData} /></AuthGuard>} />
+      </Routes>
     </DataProvider>
   );
 }
