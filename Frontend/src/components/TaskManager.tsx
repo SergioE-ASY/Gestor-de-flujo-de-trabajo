@@ -6,6 +6,11 @@ import TopNav from "./TopNav";
 import KanbanBoard from "./KanbanBoard";
 import NewTaskForm from "./NewTaskForm";
 import AssignModal from "./AssignModal";
+import DashboardPage from "./DashboardPage";
+import CrmPage from "./CrmPage";
+import AnalyticsPage from "./AnalyticsPage";
+import TeamPage from "./TeamPage";
+import ConfigPage from "./ConfigPage";
 import { fetchAllData, updateTask, createTask } from "../api";
 import { DataProvider } from "./DataContext";
 
@@ -98,12 +103,11 @@ export default function App() {
                   alert("Failed to create task");
                 }
             }} />}
-            {page !== "tasks" && page !== "new-task" && (
-              <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12, color:"var(--text-dim)" }}>
-                <div style={{ fontSize:38, opacity:0.3 }}>◈</div>
-                <p style={{ fontSize:10, fontFamily:"'DM Mono',monospace", letterSpacing:"0.1em" }}>MÓDULO EN CONSTRUCCIÓN</p>
-              </div>
-            )}
+            {page === "dashboard"  && <DashboardPage tasks={tasks} />}
+            {page === "crm"        && <CrmPage tasks={tasks} />}
+            {page === "analytics"  && <AnalyticsPage tasks={tasks} />}
+            {page === "team"       && <TeamPage tasks={tasks} />}
+            {page === "config"     && <ConfigPage />}
           </div>
         </div>
 
