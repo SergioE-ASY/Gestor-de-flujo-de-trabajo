@@ -64,14 +64,6 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
           🔔
           <span className="notif-dot" />
         </button>
-        <button 
-          className="icon-btn" 
-          onClick={handleLogout} 
-          data-tooltip="Cerrar Sesión"
-          style={{ fontSize: '18px', padding: '4px' }}
-        >
-          🚪
-        </button>
         <div className="topnav-user">
           {currentUser && <Avatar user={currentUser} size={30} />}
           <div className="topnav-user-name">

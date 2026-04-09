@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useData } from "../context/DataContext";
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: ()=>void }) {
-  const { organization } = useData();
+  const { organization, logout } = useData();
   const navigate = useNavigate();
 
   const nav = [
@@ -48,11 +48,12 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose:
         </nav>
 
         <div className="sidebar-bottom">
-          {[["?", "Ayuda"], ["→", "Cerrar Sesión"]].map(([icon, label]) => (
-            <button key={label} className="bottom-btn">
-              <span>{icon}</span> <span className="sidebar-bottom-label">{label}</span>
-            </button>
-          ))}
+          <button className="bottom-btn">
+            <span>?</span> <span className="sidebar-bottom-label">Ayuda</span>
+          </button>
+          <button className="bottom-btn" onClick={() => { logout(); navigate("/login"); }}>
+            <span>→</span> <span className="sidebar-bottom-label">Cerrar Sesión</span>
+          </button>
         </div>
       </aside>
     </>
