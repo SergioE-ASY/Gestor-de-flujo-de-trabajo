@@ -1,0 +1,269 @@
+{
+  "organization": {
+    "id": "org-001",
+    "name": "COMMAND",
+    "tier": "TIER EJECUTIVO"
+  },
+  "users": [
+    {
+      "id": "usr-001",
+      "name": "Alexander Thorne",
+      "username": "alexander.thorne",
+      "password": "password123",
+      "initials": "AT",
+      "role": "executive",
+      "avatar_color": "#7c3aed",
+      "workload": "available"
+    },
+    {
+      "id": "usr-002",
+      "name": "Marcos Silva",
+      "username": "marcos.silva",
+      "password": "password123",
+      "initials": "MS",
+      "role": "manager",
+      "avatar_color": "#8b5cf6",
+      "workload": "critical"
+    },
+    {
+      "id": "usr-003",
+      "name": "Elena Rojas",
+      "username": "elena.rojas",
+      "password": "password123",
+      "initials": "ER",
+      "role": "member",
+      "avatar_color": "#317a7c",
+      "workload": "available"
+    },
+    {
+      "id": "usr-004",
+      "name": "Luis Pérez",
+      "username": "luis.perez",
+      "password": "password123",
+      "initials": "LP",
+      "role": "member",
+      "avatar_color": "#317a7c",
+      "workload": "available"
+    },
+    {
+      "id": "usr-005",
+      "name": "Ana Torres",
+      "username": "ana.torres",
+      "password": "password123",
+      "initials": "AT2",
+      "role": "member",
+      "avatar_color": "#d946ef",
+      "workload": "busy"
+    },
+    {
+      "id": "66KrSzegBI0",
+      "name": "Pepe perez",
+      "username": "pepe.perez",
+      "password": "1234",
+      "role": "member",
+      "initials": "PP",
+      "avatar_color": "hsl(265, 70%, 60%)",
+      "email": "pepe.perez@kinetic.cmd",
+      "status": "active"
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-001",
+      "name": "Global Logistics Corp",
+      "key": "GLG",
+      "priority": "high"
+    },
+    {
+      "id": "prj-002",
+      "name": "Fintech Solutions Ltd",
+      "key": "FIN",
+      "priority": "medium"
+    },
+    {
+      "id": "prj-003",
+      "name": "Azure Health Group",
+      "key": "AZH",
+      "priority": "low"
+    },
+    {
+      "id": "prj-004",
+      "name": "Operaciones Internas",
+      "key": "OPS",
+      "priority": "low"
+    },
+    {
+      "id": "prj-005",
+      "name": "Unidad de Infraestructura",
+      "key": "INF",
+      "priority": "urgent"
+    },
+    {
+      "id": "prj-006",
+      "name": "Law & Partners PLC",
+      "key": "LAW",
+      "priority": "high"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-001",
+      "project_id": "prj-001",
+      "name": "Finanzas",
+      "color": "#317a7c"
+    },
+    {
+      "id": "tag-002",
+      "project_id": "prj-001",
+      "name": "Q4",
+      "color": "#c084fc"
+    },
+    {
+      "id": "tag-003",
+      "project_id": "prj-002",
+      "name": "API",
+      "color": "#2dd4bf"
+    },
+    {
+      "id": "tag-004",
+      "project_id": "prj-005",
+      "name": "Seguridad",
+      "color": "#f87171"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "tsk-001",
+      "project_id": "prj-001",
+      "sprint_id": null,
+      "assignee_id": "usr-002",
+      "parent_task_id": null,
+      "project_sequence": 1,
+      "type": "task",
+      "title": "Auditoría Financiera Estratégica Q4 y Revisión de Cumplimiento",
+      "description": "",
+      "status": "in_progress",
+      "priority": "high",
+      "position": 0,
+      "estimated_min": 2400,
+      "due_date": "2024-01-20",
+      "completed_at": null,
+      "_ui_column": "assigned",
+      "_extra_assignees": [
+        "usr-003"
+      ],
+      "tags": [
+        "tag-001",
+        "tag-002"
+      ]
+    },
+    {
+      "id": "tsk-002",
+      "project_id": "prj-002",
+      "sprint_id": null,
+      "assignee_id": "usr-004",
+      "parent_task_id": null,
+      "project_sequence": 2,
+      "type": "feature",
+      "title": "Integración de CRM y Optimización de Sincronización API",
+      "description": "",
+      "status": "in_progress",
+      "priority": "medium",
+      "position": 1,
+      "estimated_min": 3000,
+      "due_date": "2024-02-18",
+      "completed_at": null,
+      "_ui_column": "assigned",
+      "_extra_assignees": [],
+      "tags": [
+        "tag-003"
+      ]
+    },
+    {
+      "id": "tsk-003",
+      "project_id": "prj-003",
+      "sprint_id": null,
+      "assignee_id": null,
+      "parent_task_id": null,
+      "project_sequence": 3,
+      "type": "task",
+      "title": "Reporte Trimestral de Proyección de Ingresos",
+      "description": "",
+      "status": "done",
+      "priority": "medium",
+      "position": 0,
+      "estimated_min": null,
+      "due_date": null,
+      "completed_at": "2023-10-15T00:00:00Z",
+      "_ui_column": "completed",
+      "_extra_assignees": [],
+      "tags": [],
+      "_archived_label": "15 OCT"
+    },
+    {
+      "id": "tsk-005",
+      "project_id": "prj-005",
+      "sprint_id": null,
+      "assignee_id": null,
+      "parent_task_id": null,
+      "project_sequence": 5,
+      "type": "bug",
+      "title": "Implementación de Parche de Seguridad: Puente de Datos",
+      "description": "",
+      "status": "todo",
+      "priority": "urgent",
+      "position": 0,
+      "estimated_min": null,
+      "due_date": null,
+      "completed_at": null,
+      "_ui_column": "pending",
+      "_extra_assignees": [],
+      "tags": [
+        "tag-004"
+      ]
+    },
+    {
+      "id": "mvfnl8JvhDw",
+      "title": "Test db mutation",
+      "description": "Test description",
+      "project_id": "prj-001",
+      "due_date": "2024-11-24",
+      "priority": "high",
+      "tags": [],
+      "sprint_id": null,
+      "assignee_id": "usr-004",
+      "parent_task_id": null,
+      "project_sequence": 99,
+      "position": 99,
+      "estimated_min": 960,
+      "status": "done",
+      "completed_at": null,
+      "type": "task",
+      "_ui_column": "completed",
+      "_extra_assignees": []
+    },
+    {
+      "id": "4qmGDUsf3l8",
+      "title": "asdasdsadasd",
+      "description": "fsdfsdfsdfds",
+      "project_id": "prj-001",
+      "due_date": "2026-05-12",
+      "priority": "urgent",
+      "tags": [
+        "tag-001"
+      ],
+      "sprint_id": null,
+      "assignee_id": null,
+      "parent_task_id": null,
+      "project_sequence": 99,
+      "position": 99,
+      "estimated_min": null,
+      "status": "todo",
+      "completed_at": null,
+      "type": "task",
+      "_ui_column": "pending",
+      "_extra_assignees": []
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

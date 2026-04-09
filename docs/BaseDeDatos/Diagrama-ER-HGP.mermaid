@@ -1,0 +1,154 @@
+erDiagram
+    ORGANIZATION {
+        UUID id PK
+        VARCHAR name
+        VARCHAR crm_company_id
+        BYTEA logo
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ deleted_at
+    }
+
+    ORGANIZATION_USER {
+        UUID id PK
+        UUID organization_id FK
+        UUID user_id FK
+        ENUM role
+        TIMESTAMPTZ joined_at
+    }
+
+    USER {
+        UUID id PK
+        VARCHAR name
+        VARCHAR email
+        VARCHAR password_hash
+        ENUM role
+        BYTEA avatar
+        BOOLEAN is_active
+        TIMESTAMPTZ last_login_at
+    }
+
+    PROJECT {
+        UUID id PK
+        UUID organization_id FK
+        UUID owner_id FK
+        VARCHAR key
+        VARCHAR name
+        TEXT description
+        ENUM status
+        ENUM priority
+        DATE start_date
+        DATE due_date
+    }
+
+    PROJECT_MEMBER {
+        UUID id PK
+        UUID project_id FK
+        UUID user_id FK
+        ENUM role
+        TIMESTAMPTZ joined_at
+    }
+
+    SPRINT {
+        UUID id PK
+        UUID project_id FK
+        VARCHAR name
+        TEXT goal
+        ENUM status
+        TIMESTAMPTZ start_date
+        TIMESTAMPTZ end_date
+    }
+
+    TASK {
+        UUID id PK
+        UUID project_id FK
+        UUID sprint_id FK
+        UUID assignee_id FK
+        UUID parent_task_id FK
+        INTEGER project_sequence
+        ENUM type
+        VARCHAR title
+        TEXT description
+        ENUM status
+        ENUM priority
+        INTEGER position
+        INTEGER estimated_min
+        DATE due_date
+        TIMESTAMPTZ completed_at
+    }
+
+    TAG {
+        UUID id PK
+        UUID project_id FK
+        VARCHAR name
+        VARCHAR color
+    }
+
+    TASK_TAG {
+        UUID task_id PK, FK
+        UUID tag_id PK, FK
+    }
+
+    COMMENT {
+        UUID id PK
+        UUID task_id FK
+        UUID user_id FK
+        TEXT content
+        TIMESTAMPTZ created_at
+    }
+
+    ATTACHMENT {
+        UUID id PK
+        UUID task_id FK
+        UUID uploaded_by FK
+        BYTEA uploaded_photo
+    }
+
+    TIME_LOG {
+        UUID id PK
+        UUID task_id FK
+        UUID user_id FK
+        INTEGER minutes
+        TEXT note
+        DATE logged_date
+    }
+
+    NOTIFICATION {
+        UUID id PK
+        UUID user_id FK
+        UUID task_id FK
+        UUID project_id FK
+        ENUM type
+        TEXT message
+        BOOLEAN is_read
+    }
+
+    %% Relaciones (Cardinalidad)
+    ORGANIZATION ||--o{ ORGANIZATION_USER : "tiene miembros"
+    USER ||--o{ ORGANIZATION_USER : "pertenece a"
+    ORGANIZATION ||--o{ PROJECT : "posee"
+    
+    USER ||--o{ PROJECT : "es dueño de (owner)"
+    USER ||--o{ PROJECT_MEMBER : "participa como"
+    USER ||--o{ TASK : "se le asigna"
+    USER ||--o{ COMMENT : "escribe"
+    USER ||--o{ ATTACHMENT : "sube"
+    USER ||--o{ TIME_LOG : "registra tiempo"
+    USER ||--o{ NOTIFICATION : "recibe"
+
+    PROJECT ||--o{ PROJECT_MEMBER : "tiene miembros"
+    PROJECT ||--o{ SPRINT : "contiene"
+    PROJECT ||--o{ TASK : "contiene"
+    PROJECT ||--o{ TAG : "define"
+    PROJECT ||--o{ NOTIFICATION : "genera alertas"
+
+    SPRINT ||--o{ TASK : "agrupa"
+
+    TASK ||--o{ TASK : "tiene subtareas (parent)"
+    TASK ||--o{ TASK_TAG : "tiene"
+    TASK ||--o{ COMMENT : "tiene"
+    TASK ||--o{ ATTACHMENT : "tiene"
+    TASK ||--o{ TIME_LOG : "acumula"
+    TASK ||--o{ NOTIFICATION : "genera alertas"
+
+    TAG ||--o{ TASK_TAG : "aplica a"
