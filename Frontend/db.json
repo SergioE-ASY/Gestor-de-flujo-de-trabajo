@@ -26,7 +26,7 @@
       "name": "Elena Rojas",
       "initials": "ER",
       "role": "member",
-      "avatar_color": "#06b6d4",
+      "avatar_color": "#317a7c",
       "workload": "available"
     },
     {
@@ -34,7 +34,7 @@
       "name": "Luis Pérez",
       "initials": "LP",
       "role": "member",
-      "avatar_color": "#6366f1",
+      "avatar_color": "#317a7c",
       "workload": "available"
     },
     {
@@ -89,7 +89,7 @@
       "id": "tag-001",
       "project_id": "prj-001",
       "name": "Finanzas",
-      "color": "#60a5fa"
+      "color": "#317a7c"
     },
     {
       "id": "tag-002",
