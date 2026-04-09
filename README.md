@@ -55,6 +55,7 @@ A fin de conservar la lectura de este portal de la forma más limpia posible, he
 - [🛠️ Stack de Tecnologías Aplicadas](./docs/tecnologias.md)
 - [📂 Comprensión de la Arquitectura](./docs/arquitectura.md)
 - [🎨 Estilos y Diseño del Frontend](./docs/estilos.md)
+- [⚙️ Funcionalidades del Frontend](./docs/funcionalidades-frontend.md)
 - [⚙️ Guía Exhaustiva de Instalación](./docs/instalacion.md)
 - [🤝 Cómo Contribuir al Proyecto](./docs/contribucion.md)
 
