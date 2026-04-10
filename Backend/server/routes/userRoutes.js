@@ -1,0 +1,120 @@
+const express = require('express');
+const multer = require('multer');
+const { User } = require('../db');
+const router = express.Router();
+
+// Configuración de Multer: Almacenar en memoria (Buffer)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
+});
+
+/**
+ * @route   POST /api/users/:id/avatar
+ * @desc    Subir imagen de perfil (Avatar) y guardarla en bytea
+ */
+router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se ha subido ningún archivo.' });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    // Actualizar el campo avatar con el buffer binario
+    user.avatar = req.file.buffer;
+    await user.save();
+
+    res.json({ message: 'Avatar actualizado correctamente.' });
+  } catch (error) {
+    console.error('Error al subir avatar:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+/**
+ * @route   GET /api/users/:id/avatar
+ * @desc    Obtener imagen de perfil desde la base de datos (bytea)
+ */
+router.get('/:id/avatar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+
+    if (!user || !user.avatar) {
+      return res.status(404).json({ error: 'Imagen no encontrada.' });
+    }
+
+    // Se envía el buffer directamente
+    // Nota: Como no guardamos el mime_type en el modelo, intentamos detectar o enviamos genérico
+    res.set('Content-Type', 'image/png'); // Por defecto PNG
+    res.send(user.avatar);
+  } catch (error) {
+    console.error('Error al obtener avatar:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+// ======================
+// Rutas CRUD estándar
+// ======================
+
+router.get('/', async (req, res) => {
+  try {
+    const items = await User.findAll({ where: { deleted_at: null } });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const item = await User.findOne({ where: { id: req.params.id, deleted_at: null } });
+    if (!item) return res.status(404).json({ error: 'Not found' });
+    res.json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const item = await User.create(req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const item = await User.findByPk(req.params.id);
+    if (!item || item.deleted_at) return res.status(404).json({ error: 'Not found' });
+    await item.update(req.body);
+    res.json(item);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const item = await User.findByPk(req.params.id);
+    if (!item || item.deleted_at) return res.status(404).json({ error: 'Not found' });
+    
+    // Soft delete: actualizar deleted_at con la fecha del servidor
+    item.deleted_at = new Date();
+    await item.save();
+    
+    res.json({ message: 'Borrado lógico exitoso' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;

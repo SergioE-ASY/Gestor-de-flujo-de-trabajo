@@ -2,7 +2,7 @@
 node_modules/
 
 # Variables de entorno (común en backend)
-.env
+db.env
 
 .modules.yaml
 
