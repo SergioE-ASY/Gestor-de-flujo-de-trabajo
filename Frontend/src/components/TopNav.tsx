@@ -68,8 +68,18 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
           {currentUser && <Avatar user={currentUser} size={30} />}
           <div className="topnav-user-name">
             <p className="user-title">{currentUser?.name}</p>
-            <p className="user-subtitle">{currentUser ? roleLabels[currentUser.role] : "Guest"}</p>
+            <p className="user-subtitle">{currentUser ? (roleLabels[currentUser.role] || currentUser.role) : "Guest"}</p>
           </div>
+          {currentUser && (
+            <button 
+              className="icon-btn logout-mini-btn" 
+              onClick={handleLogout} 
+              title="Cerrar Sesión"
+              style={{ marginLeft: '10px', fontSize: '14px', opacity: 0.7 }}
+            >
+              🚪
+            </button>
+          )}
         </div>
       </div>
     </div>

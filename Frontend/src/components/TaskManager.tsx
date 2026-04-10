@@ -129,6 +129,22 @@ function MainApp({ dbData }: { dbData: any }) {
   );
 }
 
+function SessionValidator({ users }: { users: any[] }) {
+  const { currentUser, logout } = useData();
+  
+  useEffect(() => {
+    if (currentUser) {
+      const userExists = users.find((u: any) => u.id === currentUser.id);
+      if (!userExists) {
+        console.warn("Sesión antigua detectada (no existe en DB). Limpiando...");
+        logout();
+      }
+    }
+  }, [currentUser, logout, users]);
+
+  return null;
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -142,7 +158,7 @@ export default function App() {
       })
       .catch((err) => {
         console.error(err);
-        setError("Error loading data. json-server may not be running.");
+        setError("Error loading data from Backend. Ensure Node app is running on :3000.");
         setLoading(false);
       });
   }, []);
@@ -152,6 +168,7 @@ export default function App() {
 
   return (
     <DataProvider users={dbData.users} projects={dbData.projects} tags={dbData.tags} organization={dbData.organization}>
+      <SessionValidator users={dbData.users} />
       <Routes>
         <Route path="/login" element={<AuthGuard><LoginPage /></AuthGuard>} />
         <Route path="/signup" element={<AuthGuard><SignupPage /></AuthGuard>} />

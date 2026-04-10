@@ -32,16 +32,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 800));
-
-    const success = login(username, password);
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError("Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.");
+    // Quitar el retraso artificial
+    try {
+      const success = await login(username, password);
+      if (success) {
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      // El error viene propagado desde authService
+      setError(err.message || "Usuario o contraseña incorrectos. Por favor, inténtelo de nuevo.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

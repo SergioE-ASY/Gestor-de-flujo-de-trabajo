@@ -43,20 +43,25 @@ export default function SignupPage() {
     setLoading(true);
 
     // Simulate network delay
-    await new Promise(r => setTimeout(r, 1000));
+    // await new Promise(r => setTimeout(r, 1000));
 
-    const result = await signup({
-      name: formData.name,
-      username: formData.username,
-      password: formData.password
-    });
+    try {
+      const result = await signup({
+        name: formData.name,
+        username: formData.username,
+        password: formData.password
+      });
 
-    if (result) {
-      navigate("/dashboard");
-    } else {
-      setError("Hubo un problema al crear la cuenta. Inténtelo de nuevo.");
+      if (result) {
+        navigate("/dashboard");
+      } else {
+        setError("Hubo un problema al crear la cuenta. Inténtelo de nuevo.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Hubo un problema al crear la cuenta.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

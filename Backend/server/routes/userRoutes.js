@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { User } = require('../db');
+const { Op } = require('sequelize');
 const router = express.Router();
 
 // Configuración de Multer: Almacenar en memoria (Buffer)
@@ -60,6 +61,81 @@ router.get('/:id/avatar', async (req, res) => {
 });
 
 // ======================
+// Autenticación
+// ======================
+
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username (email/name) and password are required' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { name: username },
+          { email: username }
+        ],
+        deleted_at: null
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no encontrado o credenciales inválidas' });
+    }
+
+    const isValid = await user.comparePassword(password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Usuario no encontrado o credenciales inválidas' });
+    }
+
+    // Actualizar last_login_at
+    user.last_login_at = new Date();
+    await user.save();
+
+    // Devuelve el objeto usuario omitiendo el password si quieres (en la db o aqui).
+    res.json(user);
+  } catch (error) {
+    console.error('Error in login:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+router.put('/forgot-password', async (req, res) => {
+  try {
+    const { identity, newPassword } = req.body;
+    
+    if (!identity || !newPassword) {
+      return res.status(400).json({ error: 'Identity (email/name) and new password are required' });
+    }
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          { name: identity },
+          { email: identity }
+        ],
+        deleted_at: null
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    user.password_hash = newPassword; 
+    await user.save();
+
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error in forgot-password:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ======================
 // Rutas CRUD estándar
 // ======================
 
@@ -87,7 +163,8 @@ router.post('/', async (req, res) => {
     const item = await User.create(req.body);
     res.status(201).json(item);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    // Si Sequelize lanza error de unicidad u otro fallo de validación
+    res.status(400).json({ error: error.errors?.[0]?.message || error.message });
   }
 });
 

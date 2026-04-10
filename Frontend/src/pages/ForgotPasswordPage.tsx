@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { authService } from "../services/auth.service";
 import "../styles/Login.css";
 
 export default function ForgotPasswordPage() {
@@ -28,15 +29,20 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userData.password !== userData.confirmPassword) {
       setError("Las contraseñas no coinciden.");
       return;
     }
     setError("");
-    setSubmitted(true);
-    // Simulation: in a real app, this would call an API
+
+    try {
+      await authService.forgotPassword(userData.identity, userData.password);
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "No se ha podido procesar la solicitud.");
+    }
   };
 
   return (

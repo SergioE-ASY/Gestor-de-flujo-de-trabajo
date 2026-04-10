@@ -13,12 +13,28 @@ export default function NewTaskForm({ onCreate }: { onCreate:(t:Task)=>void }) {
   const priorities: Priority[] = ["low", "medium", "high", "urgent"];
   const pLabels: Record<Priority, string> = { low: "BAJA", medium: "MEDIA", high: "ALTA", urgent: "URGENTE" };
 
+  const hasProjects = projects.length > 0;
+
   const handleSubmit = () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || !hasProjects) return;
+    
+    // Mapeamos 'urgent' a 'critical' que es lo que espera el ENUM de Sequelize en el Backend
+    const priorityMapping: any = { ...form, priority: form.priority === 'urgent' ? 'critical' : form.priority };
+
     onCreate({
-      id: `tsk-${Date.now()}`, ...form, sprint_id: null, assignee_id: null, parent_task_id: null,
-      project_sequence: 99, position: 99, estimated_min: null, status: "todo", completed_at: null,
-      type: "task", _ui_column: "pending", _extra_assignees: [],
+      id: `tsk-${Date.now()}`, 
+      ...priorityMapping, 
+      sprint_id: null, 
+      assignee_id: null, 
+      parent_task_id: null,
+      project_sequence: 99, 
+      position: 99, 
+      estimated_min: null, 
+      status: "todo", 
+      completed_at: null,
+      type: "task", 
+      _ui_column: "pending", 
+      _extra_assignees: [],
     });
   };
 
@@ -92,7 +108,8 @@ export default function NewTaskForm({ onCreate }: { onCreate:(t:Task)=>void }) {
 
         <div className="newtask-footer">
           <button className="btn-secondary" onClick={() => navigate("/tasks")}>Cancelar</button>
-          <button className={`btn-primary ${!form.title?'disabled':''}`} onClick={handleSubmit} disabled={!form.title}>Crear Tarea</button>
+          {!hasProjects && <p style={{color: 'var(--color-error)', fontSize: '11px', marginRight: '15px'}}>⚠️ Debes crear un proyecto primero</p>}
+          <button className={`btn-primary ${(!form.title || !hasProjects)?'disabled':''}`} onClick={handleSubmit} disabled={!form.title || !hasProjects}>Crear Tarea</button>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User, Project, Tag, Organization } from "../components/types";
-import { signupUser } from "../api";
+import { authService } from "../services/auth.service";
 
 interface DataContextType {
   users: User[];
@@ -12,7 +12,7 @@ interface DataContextType {
   getUserById: (id: string) => User | undefined;
   getProjectById: (id: string) => Project | undefined;
   getTagById: (id: string) => Tag | undefined;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   signup: (userData: Partial<User>) => Promise<User | null>;
 }
@@ -37,23 +37,34 @@ export const DataProvider = ({
   organization: Organization;
 }) => {
   const [users, setUsers] = useState<User[]>(initialUsers.map(normalizeUser));
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem("obsidian_user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const getUserById = (id: string) => users.find(u => u.id === id);
   const getProjectById = (id: string) => projects.find(p => p.id === id);
   const getTagById = (id: string) => tags.find(t => t.id === id);
 
-  const login = (username: string, password: string) => {
-    const user = users.find(u => u.username === username && u.password === password);
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem("obsidian_user", JSON.stringify(user));
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const user = await authService.login(username, password);
+      // El backend envía el usuario. Lo normalizamos para el frontend:
+      const normalizedUser = normalizeUser(user);
+      
+      setCurrentUser(normalizedUser);
+      localStorage.setItem("obsidian_user", JSON.stringify(normalizedUser));
+      
+      // Actualizar la lista de usuarios cacheada si el usuario no estaba (opcional):
+      setUsers(prev => {
+        if (!prev.find(u => u.id === normalizedUser.id)) {
+          return [...prev, normalizedUser];
+        }
+        return prev;
+      });
+
       return true;
+    } catch (error) {
+      console.error("Login fallido:", error);
+      throw error; // Propagamos el error para que LoginPage lo maneje e imprima
     }
-    return false;
   };
 
   const logout = () => {
@@ -78,15 +89,27 @@ export const DataProvider = ({
         status: "active",
       };
 
-      const savedUser = await signupUser(newUser);
-      const normalized = normalizeUser(savedUser);
+      // Se delegó a authService (Axios)
+      const savedUser = await authService.signup({
+        name: newUser.name,
+        email: newUser.email,
+        password_hash: newUser.password, // El hook del backend lo hasheará
+      }); 
+      // El backend devuelve id, etc. Asignamos los campos calculados del front si faltan.
+      const userConID = {
+         ...newUser,
+         id: savedUser.id // Tomamos el ID oficial de la BD
+      };
+
+      const normalized = normalizeUser(userConID);
+      
       setUsers(prev => [...prev, normalized]);
       setCurrentUser(normalized);
       localStorage.setItem("obsidian_user", JSON.stringify(normalized));
       return normalized;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Signup failed:", err);
-      return null;
+      throw err; // Lanza para que SignupPage maneje el Catch
     }
   };
 
