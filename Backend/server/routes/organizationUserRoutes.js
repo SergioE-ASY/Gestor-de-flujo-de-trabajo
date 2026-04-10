@@ -41,6 +41,41 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// Endpoint para que un admin edite el rol o info de un miembro de la org
+router.put('/:organization_id/users/:user_id', async (req, res) => {
+  try {
+    const { organization_id, user_id } = req.params;
+    const { request_user_id, role, ...updateData } = req.body;
+    
+    // 1. Validar que quien pide (request_user_id) sea admin de la org
+    const requester = await OrganizationUser.findOne({
+      where: { organization_id, user_id: request_user_id }
+    });
+    
+    if (!requester || requester.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Requires admin role in the organization' });
+    }
+    
+    // 2. Buscar al usuario a actualizar
+    const targetUser = await OrganizationUser.findOne({
+      where: { organization_id, user_id }
+    });
+    
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found in this organization' });
+    }
+    
+    // 3. Actualizar al usuario
+    if (role) targetUser.role = role;
+    Object.assign(targetUser, updateData);
+    await targetUser.save();
+    
+    res.json(targetUser);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     const deleted = await OrganizationUser.destroy({ where: { id: req.params.id } });

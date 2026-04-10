@@ -70,8 +70,8 @@ app.listen(port, () => {
 });
 
 setInterval(() => {
-   
-}, 10000000);
+   console.log(new Date().toLocaleString());
+}, 1000);
 
 // Agrega esto temporalmente al inicio de app.js
 
