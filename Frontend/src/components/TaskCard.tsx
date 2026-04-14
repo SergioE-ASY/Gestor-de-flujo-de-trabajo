@@ -46,6 +46,9 @@ export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t:
       </div>
 
       <p className="card-title">{task.title}</p>
+      {task.description && (
+        <p className="card-description">{task.description}</p>
+      )}
 
       <div className={`card-project ${tags.length ? 'mb-8' : 'mb-12'}`}>
         <div className="proj-icon">■</div>
