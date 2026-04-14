@@ -2,9 +2,10 @@ import { Avatar } from "./Atoms";
 import { useData } from "../context/DataContext";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../services/auth.service";
 
 export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
-  const { currentUser, logout } = useData();
+  const { currentUser, logout, refreshCurrentUser } = useData();
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
 
@@ -24,9 +25,26 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
   };
 
   const handleLogout = () => {
-    console.log("handleLogout called in TopNav");
     logout();
     navigate("/login");
+  };
+
+  const handleAvatarClick = () => {
+    document.getElementById("avatar-upload")?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    try {
+      await authService.uploadAvatar(currentUser.id, file);
+      // Actualizamos el estado para que sepa que tiene avatar
+      refreshCurrentUser({ hasAvatar: true });
+    } catch (err) {
+      alert("Error al subir el avatar");
+      console.error(err);
+    }
   };
 
   const roleLabels: Record<string, string> = {
@@ -65,20 +83,30 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
           <span className="notif-dot" />
         </button>
         <div className="topnav-user">
-          {currentUser && <Avatar user={currentUser} size={30} />}
-          <div className="topnav-user-name">
+          <div className="topnav-user-name" style={{ textAlign: "right", marginRight: "12px" }}>
             <p className="user-title">{currentUser?.name}</p>
-            <p className="user-subtitle">{currentUser ? (roleLabels[currentUser.role] || currentUser.role) : "Guest"}</p>
+            <p className="user-subtitle">
+              {currentUser ? (roleLabels[currentUser.role] || currentUser.role) : "Guest"}
+            </p>
           </div>
+
           {currentUser && (
-            <button 
-              className="icon-btn logout-mini-btn" 
-              onClick={handleLogout} 
-              title="Cerrar Sesión"
-              style={{ marginLeft: '10px', fontSize: '14px', opacity: 0.7 }}
+            <div 
+              className="avatar-interactive-wrapper" 
+              onClick={handleAvatarClick}
+              title="Haz clic para actualizar tu avatar"
+              style={{ cursor: "pointer", position: "relative" }}
             >
-              🚪
-            </button>
+              <Avatar user={currentUser} size={34} />
+              <div className="avatar-edit-overlay">✎</div>
+              <input 
+                type="file" 
+                id="avatar-upload" 
+                hidden 
+                accept="image/*" 
+                onChange={handleFileChange} 
+              />
+            </div>
           )}
         </div>
       </div>

@@ -1,3 +1,6 @@
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import type { User } from "../components/types";
+import { handleCreateUser, type NewUserForm } from "../services/user.service";
 import { useData } from "../context/DataContext";
 
 const ROLE_LABEL: Record<string, string>     = { executive: "Ejecutivo", manager: "Gerente", member: "Miembro" };
@@ -5,6 +8,44 @@ const WORKLOAD_COLOR: Record<string, string> = { available: "#34d399", busy: "#f
 
 export default function ConfigPage() {
   const { organization, users, currentUser } = useData();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [userList, setUserList] = useState<User[]>(users);
+  const [form, setForm] = useState<NewUserForm>({ name: "", email: "", password: "", role: "member" });
+
+  useEffect(() => {
+    setUserList(users);
+  }, [users]);
+
+  const canSubmit = useMemo(() => {
+    return form.name.trim() && form.email.trim() && form.password.trim();
+  }, [form]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSubmitError("");
+    setForm({ name: "", email: "", password: "", role: "member" });
+  };
+
+  const onCreateUserSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSubmit || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const newUser = await handleCreateUser(form);
+
+      setUserList((prev) => [...prev, newUser]);
+      closeModal();
+    } catch (error: any) {
+      setSubmitError(error?.message || "No se pudo crear el usuario.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const sections = [
     { id: "org",   label: "⊞  ORGANIZACIÓN" },
@@ -75,10 +116,16 @@ export default function ConfigPage() {
             <div className="config-section">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div className="config-section-title" style={{ marginBottom: 0 }}>Usuarios del Sistema</div>
-                <button className="btn-primary" style={{ fontSize: 10, padding: "6px 14px" }}>+ AÑADIR</button>
+                <button
+                  className="btn-primary"
+                  style={{ fontSize: 10, padding: "6px 14px" }}
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  + AÑADIR
+                </button>
               </div>
               <div className="config-user-list">
-                {users.map(user => (
+                {userList.map(user => (
                   <div key={user.id} className={`config-user-row ${user.id === currentUser?.id ? "current" : ""}`}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <div className="avatar" style={{ background: user.avatar_color, width: 34, height: 34, fontSize: 12 }}>{user.initials}</div>
@@ -130,6 +177,87 @@ export default function ConfigPage() {
           </div>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 className="modal-title">Crear Usuario</h3>
+                <p className="modal-subtitle">Añade un nuevo usuario al sistema</p>
+              </div>
+              <button className="modal-close" onClick={closeModal} aria-label="Cerrar modal">×</button>
+            </div>
+
+            <form className="modal-body" onSubmit={onCreateUserSubmit}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">NOMBRE</label>
+                <input
+                  className="form-input"
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre completo"
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">EMAIL</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="usuario@empresa.com"
+                  required
+                />
+              </div>
+
+              <div className="modal-grid2">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">CONTRASEÑA</label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="Min. 4 caracteres"
+                    minLength={4}
+                    required
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">ROL</label>
+                  <select
+                    className="form-select"
+                    value={form.role}
+                    onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as NewUserForm["role"] }))}
+                  >
+                    <option value="member">Miembro</option>
+                    <option value="manager">Gerente</option>
+                  </select>
+                </div>
+              </div>
+
+              {submitError && (
+                <div style={{ fontSize: 12, color: "var(--color-error)", fontFamily: "'DM Mono',monospace" }}>
+                  {submitError}
+                </div>
+              )}
+
+              <div className="modal-actions" style={{ justifyContent: "flex-end" }}>
+                <button type="button" className="btn-secondary" onClick={closeModal} disabled={isSubmitting}>
+                  Cancelar
+                </button>
+                <button type="submit" className={`btn-primary ${!canSubmit || isSubmitting ? "disabled" : ""}`} disabled={!canSubmit || isSubmitting}>
+                  {isSubmitting ? "Creando..." : "Crear usuario"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

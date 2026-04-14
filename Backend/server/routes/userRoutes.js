@@ -11,10 +11,10 @@ const upload = multer({
 });
 
 /**
- * @route   POST /api/users/:id/avatar
+ * @route   PUT /api/users/:id/avatar
  * @desc    Subir imagen de perfil (Avatar) y guardarla en bytea
  */
-router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
+router.put('/:id/avatar', upload.single('avatar'), async (req, res) => {
   try {
     const { id } = req.params;
     if (!req.file) {
@@ -32,8 +32,16 @@ router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
 
     res.json({ message: 'Avatar actualizado correctamente.' });
   } catch (error) {
-    console.error('Error al subir avatar:', error);
-    res.status(500).json({ error: 'Error interno del servidor.' });
+    console.error('--- DEBUG AVATAR ERROR ---');
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+    if (error.errors) {
+      console.error('Validation Errors:', error.errors.map(e => e.message));
+    }
+    res.status(500).json({ 
+      error: 'Error interno del servidor al procesar el avatar.',
+      details: error.message 
+    });
   }
 });
 
@@ -67,7 +75,7 @@ router.get('/:id/avatar', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
     if (!username || !password) {
       return res.status(400).json({ error: 'Username (email/name) and password are required' });
     }
@@ -95,8 +103,12 @@ router.post('/login', async (req, res) => {
     user.last_login_at = new Date();
     await user.save();
 
-    // Devuelve el objeto usuario omitiendo el password si quieres (en la db o aqui).
-    res.json(user);
+    // Devuelve el objeto usuario omitiendo el password y el buffer pesado
+    const data = user.toJSON();
+    data.hasAvatar = !!data.avatar;
+    delete data.password_hash;
+    delete data.avatar;
+    res.json(data);
   } catch (error) {
     console.error('Error in login:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -106,7 +118,7 @@ router.post('/login', async (req, res) => {
 router.put('/forgot-password', async (req, res) => {
   try {
     const { identity, newPassword } = req.body;
-    
+
     if (!identity || !newPassword) {
       return res.status(400).json({ error: 'Identity (email/name) and new password are required' });
     }
@@ -125,7 +137,7 @@ router.put('/forgot-password', async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    user.password_hash = newPassword; 
+    user.password_hash = newPassword;
     await user.save();
 
     res.json({ message: 'Contraseña actualizada correctamente' });
@@ -161,7 +173,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const item = await User.create(req.body);
-    res.status(201).json(item);
+    const data = item.toJSON();
+    data.hasAvatar = !!data.avatar;
+    delete data.avatar;
+    res.status(201).json(data);
   } catch (error) {
     // Si Sequelize lanza error de unicidad u otro fallo de validación
     res.status(400).json({ error: error.errors?.[0]?.message || error.message });
@@ -183,11 +198,11 @@ router.delete('/:id', async (req, res) => {
   try {
     const item = await User.findByPk(req.params.id);
     if (!item || item.deleted_at) return res.status(404).json({ error: 'Not found' });
-    
+
     // Soft delete: actualizar deleted_at con la fecha del servidor
     item.deleted_at = new Date();
     await item.save();
-    
+
     res.json({ message: 'Borrado lógico exitoso' });
   } catch (error) {
     res.status(500).json({ error: error.message });

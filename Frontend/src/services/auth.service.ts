@@ -59,5 +59,23 @@ export const authService = {
       }
       throw new Error('Error al conectar con el servidor para restaurar la contraseña.');
     }
+  },
+
+  async uploadAvatar(userId: string, file: File): Promise<{ message: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await apiClient.put<{ message: string }>(`/users/${userId}/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.error) {
+        throw new Error(error.response.data.error);
+      }
+      throw new Error('Error al subir el avatar.');
+    }
   }
 };

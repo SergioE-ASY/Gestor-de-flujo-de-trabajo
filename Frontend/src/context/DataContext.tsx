@@ -15,6 +15,7 @@ interface DataContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   signup: (userData: Partial<User>) => Promise<User | null>;
+  refreshCurrentUser: (newData: Partial<User>) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -113,10 +114,15 @@ export const DataProvider = ({
     }
   };
 
+  const refreshCurrentUser = (newData: Partial<User>) => {
+    setCurrentUser(prev => prev ? { ...prev, ...newData, avatar_updated_at: Date.now() } : null);
+  };
+
   return (
     <DataContext.Provider value={{ 
       users, projects, tags, organization, currentUser, 
-      getUserById, getProjectById, getTagById, login, logout, signup 
+      getUserById, getProjectById, getTagById, login, logout, signup,
+      refreshCurrentUser
     }}>
       {children}
     </DataContext.Provider>
