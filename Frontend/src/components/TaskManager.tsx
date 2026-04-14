@@ -69,6 +69,12 @@ function MainApp({ dbData }: { dbData: any }) {
     const task = tasks.find(t => t.id === taskId);
     if (!task || task._ui_column === targetCol) return;
 
+    // Regla de flujo: no permitir pasar de pendiente a completada directamente.
+    if (task._ui_column === "pending" && targetCol === "completed") {
+      alert("Debes asignar la tarea antes de marcarla como completada.");
+      return;
+    }
+
     if (targetCol === "assigned" && !task.assignee_id) {
       setAssign(task);
       return;
