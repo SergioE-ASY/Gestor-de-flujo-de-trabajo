@@ -1,15 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Task } from "./types";
 import { PriorityBadge, Avatar } from "./Atoms";
 import { useData } from "../context/DataContext";
 import { WORKLOAD_CFG } from "./constants";
 
+const toInputDate = (rawDate: string | null | undefined): string => {
+  if (rawDate) {
+    const parsed = new Date(rawDate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    // Fallback por si llega un string ya compatible con input date.
+    return rawDate.slice(0, 10);
+  }
+
+  return new Date().toISOString().slice(0, 10);
+};
+
 export default function AssignModal({ task, onClose, onConfirm }: { task: Task; onClose:()=>void; onConfirm:(payload:any)=>void }) {
   const { users, currentUser, getProjectById } = useData();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [hours, setHours] = useState(16);
-  const [dueDate, setDueDate] = useState("2024-11-24");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(task.assignee_id ?? null);
+  const [hours, setHours] = useState(Math.max(1, Math.min(40, Math.round((task.estimated_min ?? 16 * 60) / 60))));
+  const [dueDate, setDueDate] = useState(toInputDate(task.due_date));
   const project = getProjectById(task.project_id);
+
+  useEffect(() => {
+    setSelectedUserId(task.assignee_id ?? null);
+    setHours(Math.max(1, Math.min(40, Math.round((task.estimated_min ?? 16 * 60) / 60))));
+    setDueDate(toInputDate(task.due_date));
+  }, [task.id, task.assignee_id, task.estimated_min, task.due_date]);
 
   return (
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -77,7 +96,18 @@ export default function AssignModal({ task, onClose, onConfirm }: { task: Task; 
 
           <div className="modal-actions">
              <button className="btn-secondary flex-1" onClick={onClose}>Cancelar</button>
-             <button className={`btn-primary flex-2 ${!selectedUserId?'disabled':''}`} onClick={()=>selectedUserId && onConfirm({taskId:task.id, assignee_id:selectedUserId, estimated_min:hours*60, due_date:dueDate})} disabled={!selectedUserId}>Confirmar Asignación</button>
+             <button
+               className={`btn-primary flex-2 ${!selectedUserId ? 'disabled' : ''}`}
+               onClick={() => selectedUserId && onConfirm({
+                 taskId: task.id,
+                 assignee_id: selectedUserId,
+                 estimated_min: hours * 60,
+                 due_date: dueDate || null,
+               })}
+               disabled={!selectedUserId}
+             >
+               Confirmar Asignación
+             </button>
           </div>
         </div>
       </div>
