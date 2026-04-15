@@ -15,7 +15,7 @@ export async function fetchAllData() {
   const projects: Project[] = await projectsRes.json();
   const tags: Tag[] = await tagsRes.json();
   const rawTasks = await tasksRes.json();
-  
+
   // Mapear _ui_column requerido por el Kanban a partir del status PostgreSQL
   const tasks: Task[] = rawTasks.map((t: any) => {
     const st = t.status || "todo";
@@ -25,10 +25,10 @@ export async function fetchAllData() {
 
   // Como organization devuelve un array, extraeremos el primero o dejaremos un fallback.
   const orgArr = await orgRes.json();
-  const organization: Organization = orgArr[0] || { 
-    id: "org-fallback", 
-    name: "Mi Organización", 
-    plan: "pro" 
+  const organization: Organization = orgArr[0] || {
+    id: "org-fallback",
+    name: "Mi Organización",
+    plan: "pro"
   };
 
   return { users, projects, tags, tasks, organization };
@@ -49,7 +49,7 @@ export async function createTask(task: Task): Promise<Task> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  
+
   const created = await res.json();
   const st = created.status || "todo";
   created._ui_column = (st === "todo" || st === "backlog") ? "pending" : (st === "in_progress" ? "assigned" : "completed");
