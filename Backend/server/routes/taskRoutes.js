@@ -4,13 +4,30 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { status, assignee_id } = req.query;
+    const { status, assignee_id, project_id } = req.query;
     const whereClause = { deleted_at: null };
     
     if (status) whereClause.status = status;
     if (assignee_id) whereClause.assignee_id = assignee_id;
+    if (project_id) whereClause.project_id = project_id;
 
     const items = await Task.findAll({ where: whereClause });
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Filtrar tareas por proyecto
+router.get('/project/:projectId', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const items = await Task.findAll({
+      where: {
+        project_id: projectId,
+        deleted_at: null,
+      },
+    });
     res.json(items);
   } catch (error) {
     res.status(500).json({ error: error.message });
