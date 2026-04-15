@@ -1,9 +1,18 @@
-import type { Task, User, Tag } from "./types";
+import { useState } from "react";
+import type { Task, User, Tag, Comment } from "./types";
 import { PriorityBadge, Avatar } from "./Atoms";
 import { useData } from "../context/DataContext";
+import { fetchTaskComments, createTaskComment } from "../api";
 
 export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t: Task) => void }) {
-  const { getProjectById, getUserById, getTagById } = useData();
+  const { getProjectById, getUserById, getTagById, currentUser } = useData();
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentsError, setCommentsError] = useState("");
+  const [newComment, setNewComment] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
 
   const project  = getProjectById(task.project_id);
   const assignee = task.assignee_id ? getUserById(task.assignee_id) : undefined;
@@ -28,6 +37,50 @@ export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t:
 
   const handleDragEnd = (e: React.DragEvent) => {
     if (e.target instanceof HTMLElement) e.target.classList.remove("dragging");
+  };
+
+  const handleToggleComments = async () => {
+    const nextVisible = !showComments;
+    setShowComments(nextVisible);
+
+    if (!nextVisible || commentsLoaded || loadingComments) return;
+
+    setLoadingComments(true);
+    setCommentsError("");
+    try {
+      const loadedComments = await fetchTaskComments(task.id);
+      setComments(loadedComments);
+      setCommentsLoaded(true);
+    } catch (error) {
+      console.error(error);
+      setCommentsError("No se pudieron cargar los comentarios");
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    const content = newComment.trim();
+    if (!content || !currentUser?.id || savingComment) return;
+
+    setSavingComment(true);
+    setCommentsError("");
+    try {
+      const created = await createTaskComment({
+        task_id: task.id,
+        user_id: currentUser.id,
+        content,
+      });
+      setComments(prev => [...prev, { ...created, User: { id: currentUser.id, name: currentUser.name, email: currentUser.email } }]);
+      setNewComment("");
+      setCommentsLoaded(true);
+      setShowComments(true);
+    } catch (error) {
+      console.error(error);
+      setCommentsError("No se pudo crear el comentario");
+    } finally {
+      setSavingComment(false);
+    }
   };
 
   return (
@@ -82,6 +135,60 @@ export default function TaskCard({ task, onAssign }: { task: Task; onAssign: (t:
           <button className="assign-btn" onClick={() => onAssign(task)}>
             <span>◎</span> ASIGNAR AHORA
           </button>
+        )}
+      </div>
+
+      <div className="card-comments" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="comments-toggle-btn"
+          type="button"
+          onClick={handleToggleComments}
+        >
+          {showComments ? "Ocultar comentarios" : "Ver comentarios"}
+          <span className="comments-count">{comments.length}</span>
+        </button>
+
+        {showComments && (
+          <div className="comments-panel">
+            {loadingComments && <p className="comments-info">Cargando comentarios...</p>}
+            {!loadingComments && comments.length === 0 && !commentsError && (
+              <p className="comments-info">Sin comentarios todavía.</p>
+            )}
+            {commentsError && <p className="comments-error">{commentsError}</p>}
+
+            {comments.length > 0 && (
+              <div className="comments-list">
+                {comments.map((comment) => {
+                  const author = comment.User?.name || getUserById(comment.user_id)?.name || "Usuario";
+                  return (
+                    <div key={comment.id} className="comment-item">
+                      <p className="comment-author">{author}</p>
+                      <p className="comment-content">{comment.content}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="comments-form">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={currentUser ? "Escribe un comentario..." : "Inicia sesión para comentar"}
+                className="comment-input"
+                disabled={!currentUser || savingComment}
+              />
+              <button
+                type="button"
+                className="comment-send-btn"
+                onClick={handleAddComment}
+                disabled={!currentUser || savingComment || !newComment.trim()}
+              >
+                {savingComment ? "Enviando..." : "Enviar"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

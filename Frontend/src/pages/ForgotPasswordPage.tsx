@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { authService } from "../services/auth.service";
 import "../styles/Login.css";
 
 export default function ForgotPasswordPage() {
-  const navigate = useNavigate();
   const [userData, setUserData] = useState({
     identity: "",
     password: "",

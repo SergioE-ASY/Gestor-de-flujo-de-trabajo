@@ -10,6 +10,16 @@ export interface Organization { id: string; name: string; tier: string; }
 export interface User { id: string; name: string; username?: string; password?: string; initials: string; role: UserRole; avatar_color: string; workload: Workload; email: string; status: string; hasAvatar?: boolean; avatar_updated_at?: number; }
 export interface Project { id: string; name: string; key: string; priority: Priority; }
 export interface Tag { id: string; project_id: string; name: string; color: string; }
+export interface Comment {
+  id: string;
+  task_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  User?: Pick<User, "id" | "name" | "email">;
+}
 
 export interface Task {
   id: string; project_id: string; sprint_id: string | null; assignee_id: string | null;

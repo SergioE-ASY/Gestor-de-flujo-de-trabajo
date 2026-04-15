@@ -1,4 +1,4 @@
-import type { Task, User, Project, Tag, Organization } from "./components/types";
+import type { Task, User, Project, Tag, Organization, Comment } from "./components/types";
 
 const API_URL = "http://localhost:3000/api";
 
@@ -78,5 +78,27 @@ export async function signupUser(user: User): Promise<User> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),
   });
+  return res.json();
+}
+
+export async function fetchTaskComments(taskId: string): Promise<Comment[]> {
+  const res = await fetch(`${API_URL}/comments?task_id=${taskId}`);
+  if (!res.ok) {
+    throw new Error("No se pudieron cargar los comentarios");
+  }
+  return res.json();
+}
+
+export async function createTaskComment(payload: Pick<Comment, "task_id" | "user_id" | "content">): Promise<Comment> {
+  const res = await fetch(`${API_URL}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo crear el comentario");
+  }
+
   return res.json();
 }

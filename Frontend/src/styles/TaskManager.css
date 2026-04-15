@@ -296,6 +296,123 @@ button { font-family: inherit; }
 }
 .assign-btn:hover { background: var(--accent-bg-hover); }
 
+.card-comments {
+  margin-top: 10px;
+}
+
+.comments-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-body);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace;
+}
+
+.comments-count {
+  background: var(--accent-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  min-width: 18px;
+  padding: 1px 6px;
+  text-align: center;
+  color: var(--accent-light);
+}
+
+.comments-panel {
+  margin-top: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.08);
+}
+
+.comments-info {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.comments-error {
+  font-size: 9px;
+  color: #f87171;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.comment-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px;
+  background: rgba(255,255,255,0.02);
+}
+
+.comment-author {
+  font-size: 9px;
+  color: var(--text-heading);
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.comment-content {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.comments-form {
+  display: flex;
+  gap: 6px;
+}
+
+.comment-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-body);
+  padding: 6px 8px;
+  font-size: 10px;
+}
+
+.comment-send-btn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--accent-light);
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+}
+
+.comment-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ============================================================
    NEW TASK FORM
    ============================================================ */

@@ -11,6 +11,12 @@ const apiClient = axios.create({
   },
 });
 
+type SignupPayload = {
+  name: string;
+  email: string;
+  password_hash: string;
+};
+
 export const authService = {
   /**
    * Intenta iniciar sesión con el servidor backend mediante nombre de usuario (o email) y contraseña.
@@ -34,7 +40,7 @@ export const authService = {
     }
   },
 
-  async signup(userData: Partial<User>): Promise<User> {
+  async signup(userData: SignupPayload): Promise<User> {
     try {
       const response = await apiClient.post<User>('/users', userData);
       return response.data;

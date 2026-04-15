@@ -22,10 +22,10 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Normalize a user to ensure required fields always exist (handles legacy/signup users)
 const normalizeUser = (u: User): User => ({
-  workload: "available" as any,
-  status: "active",
-  email: `${u.username ?? u.id}@kinetic.cmd`,
   ...u,
+  workload: u.workload ?? ("available" as any),
+  status: u.status ?? "active",
+  email: u.email ?? `${u.username ?? u.id}@kinetic.cmd`,
 });
 
 export const DataProvider = ({ 
@@ -76,12 +76,13 @@ export const DataProvider = ({
   const signup = async (userData: Partial<User>) => {
     try {
       if (!userData.username || !userData.password || !userData.name) return null;
+      const plainPassword = userData.password;
 
       const newUser: User = {
         id: `u-${Date.now()}`,
         name: userData.name,
         username: userData.username,
-        password: userData.password,
+        password: plainPassword,
         role: "member",
         initials: userData.name.split(" ").map((n: string) => n[0]).join("").toUpperCase(),
         avatar_color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`,
@@ -94,7 +95,7 @@ export const DataProvider = ({
       const savedUser = await authService.signup({
         name: newUser.name,
         email: newUser.email,
-        password_hash: newUser.password, // El hook del backend lo hasheará
+        password_hash: plainPassword, // El hook del backend lo hasheará
       }); 
       // El backend devuelve id, etc. Asignamos los campos calculados del front si faltan.
       const userConID = {

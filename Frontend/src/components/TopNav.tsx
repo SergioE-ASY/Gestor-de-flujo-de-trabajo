@@ -1,13 +1,11 @@
 import { Avatar } from "./Atoms";
 import { useData } from "../context/DataContext";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { authService } from "../services/auth.service";
 
 export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
-  const { currentUser, logout, refreshCurrentUser } = useData();
+  const { currentUser, refreshCurrentUser } = useData();
   const [isDark, setIsDark] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
@@ -22,11 +20,6 @@ export default function TopNav({ onMenuToggle }: { onMenuToggle: () => void }) {
       document.documentElement.classList.add("dark");
       setIsDark(true);
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
   };
 
   const handleAvatarClick = () => {
