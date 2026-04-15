@@ -102,3 +102,25 @@ export async function createTaskComment(payload: Pick<Comment, "task_id" | "user
 
   return res.json();
 }
+
+export async function createProject(payload: {
+  name: string;
+  key: string;
+  owner_id: string;
+  organization_id?: string;
+  priority?: "low" | "medium" | "high" | "critical";
+}): Promise<Project> {
+  const res = await fetch(`${API_URL}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "No se pudo crear el proyecto");
+  }
+
+  return res.json();
+}
+

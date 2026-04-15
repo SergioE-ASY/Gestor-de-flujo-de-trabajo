@@ -16,14 +16,6 @@ const sequelize = new Sequelize(
     }
 );
 
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log("DB sincronizada con Sequelize");
-  })
-  .catch(err => {
-    console.error("Error sync:", err);
-  });
-
 
 // --- Importación de modelos usando require ---
 const Attachment = require('../models/attachment.js')(sequelize);
@@ -131,6 +123,16 @@ sequelize.authenticate()
 sequelize.afterSync(() => {
     console.log('Base de datos sincronizada correctamente.');
 });
+
+// Importante: evitar alter automático para no forzar casts de ENUM
+// (ej: user_role -> enum_users_role). Se usa el esquema existente de la BD.
+sequelize.sync()
+  .then(() => {
+    console.log("DB sincronizada con Sequelize");
+  })
+  .catch(err => {
+    console.error("Error sync:", err);
+  });
 
 module.exports = {
     sequelize,
