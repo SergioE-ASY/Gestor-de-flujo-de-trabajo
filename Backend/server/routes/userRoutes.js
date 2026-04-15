@@ -10,6 +10,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5MB
 });
 
+console.log("USER MODEL:", User);
 /**
  * @route   PUT /api/users/:id/avatar
  * @desc    Subir imagen de perfil (Avatar) y guardarla en bytea

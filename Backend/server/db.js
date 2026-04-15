@@ -16,6 +16,15 @@ const sequelize = new Sequelize(
     }
 );
 
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log("DB sincronizada con Sequelize");
+  })
+  .catch(err => {
+    console.error("Error sync:", err);
+  });
+
+
 // --- Importación de modelos usando require ---
 const Attachment = require('../models/attachment.js')(sequelize);
 const Comment = require('../models/comment.js')(sequelize);
@@ -138,4 +147,4 @@ module.exports = {
     TaskTag,
     TimeLog,
     User
-};
+};
