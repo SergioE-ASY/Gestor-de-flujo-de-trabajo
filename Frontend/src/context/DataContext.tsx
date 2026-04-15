@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { User, Project, Tag, Organization } from "../components/types";
 import { authService } from "../services/auth.service";
@@ -28,6 +28,18 @@ const normalizeUser = (u: User): User => ({
   email: u.email ?? `${u.username ?? u.id}@kinetic.cmd`,
 });
 
+const getStoredUser = (): User | null => {
+  try {
+    const raw = localStorage.getItem("obsidian_user");
+    if (!raw) return null;
+    return normalizeUser(JSON.parse(raw));
+  } catch (error) {
+    console.warn("No se pudo restaurar la sesión local.", error);
+    localStorage.removeItem("obsidian_user");
+    return null;
+  }
+};
+
 export const DataProvider = ({ 
   children, users: initialUsers, projects, tags, organization 
 }: { 
@@ -38,7 +50,7 @@ export const DataProvider = ({
   organization: Organization;
 }) => {
   const [users, setUsers] = useState<User[]>(initialUsers.map(normalizeUser));
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredUser());
 
   const getUserById = (id: string) => users.find(u => u.id === id);
   const getProjectById = (id: string) => projects.find(p => p.id === id);
@@ -116,8 +128,16 @@ export const DataProvider = ({
   };
 
   const refreshCurrentUser = (newData: Partial<User>) => {
-    setCurrentUser(prev => prev ? { ...prev, ...newData, avatar_updated_at: Date.now() } : null);
+    setCurrentUser(prev => prev ? normalizeUser({ ...prev, ...newData, avatar_updated_at: Date.now() }) : null);
   };
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem("obsidian_user", JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem("obsidian_user");
+    }
+  }, [currentUser]);
 
   return (
     <DataContext.Provider value={{ 
