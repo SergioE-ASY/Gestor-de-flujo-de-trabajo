@@ -113,35 +113,51 @@ export default function KanbanBoard({ tasks, onAssign, onTaskMove }: { tasks: Ta
             <h1 className="page-title">PANEL DE CONTROL DE TAREAS</h1>
             <p className="page-desc">Gestionando {filteredTasks.length} mandatos activos en {columns.length} divisiones estratégicas.</p>
           </div>
-          <div className="kanban-filters">
-            <select
+          <div className="kanban-filters" style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+            <button
               className="filter-btn"
-              value={selectedProjectId}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === "__create_project__") {
-                  setShowCreateProjectForm(true);
-                  return;
-                }
+              style={selectedProjectId === "all" && !showCreateProjectForm ? { backgroundColor: "var(--accent-primary)", color: "#000" } : {}}
+              onClick={() => {
                 setShowCreateProjectForm(false);
-                setSelectedProjectId(value);
+                setSelectedProjectId("all");
               }}
             >
-              <option value="all">⊟ TODOS LOS PROYECTOS</option>
-              {projectOptions.map((project) => (
-                <option key={project.id} value={project.id}>{project.name.toUpperCase()}</option>
-              ))}
-              <option value="__create_project__">+ CREAR NUEVO PROYECTO</option>
-            </select>
-            <button className="filter-btn">↑↓ PRIORIDAD</button>
+              ⊟ TODOS LOS PROYECTOS
+            </button>
+            {projectOptions.map((project) => (
+              <button
+                key={project.id}
+                className="filter-btn"
+                style={selectedProjectId === project.id && !showCreateProjectForm ? { backgroundColor: "var(--accent-primary)", color: "#000" } : {}}
+                onClick={() => {
+                  setShowCreateProjectForm(false);
+                  setSelectedProjectId(project.id);
+                }}
+              >
+                {project.name.toUpperCase()}
+              </button>
+            ))}
+            <button
+              className="filter-btn"
+              style={showCreateProjectForm ? { backgroundColor: "var(--accent-primary)", color: "#000" } : {}}
+              onClick={() => setShowCreateProjectForm(true)}
+            >
+              + CREAR NUEVO PROYECTO
+            </button>
+            <button className="filter-btn" style={{ marginLeft: "auto" }}>↑↓ PRIORIDAD</button>
           </div>
         </div>
-        {showCreateProjectForm && (
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, alignItems: "end" }}>
+      </header>
+
+      <div className="kanban-columns" style={showCreateProjectForm ? { display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 24 } : {}}>
+        {showCreateProjectForm ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, backgroundColor: "var(--bg-secondary)", borderRadius: 8, padding: 24, width: "100%", maxWidth: 600 }}>
+            <h2 style={{ fontSize: 18, marginBottom: 8, color: "var(--text-primary)", fontWeight: 600 }}>Crear Nuevo Proyecto</h2>
             <div>
               <label className="form-label">NOMBRE DEL PROYECTO</label>
               <input
                 className="form-input"
+                style={{ border: "1px solid #3b82f6", outline: "none" }}
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 placeholder="Ej: Plataforma de Ventas Q3"
@@ -151,6 +167,7 @@ export default function KanbanBoard({ tasks, onAssign, onTaskMove }: { tasks: Ta
               <label className="form-label">KEY (OPCIONAL)</label>
               <input
                 className="form-input"
+                style={{ border: "1px solid #3b82f6", outline: "none" }}
                 value={newProjectKey}
                 onChange={(e) => setNewProjectKey(e.target.value)}
                 placeholder="PRJ001"
@@ -159,7 +176,7 @@ export default function KanbanBoard({ tasks, onAssign, onTaskMove }: { tasks: Ta
             </div>
             <div>
               <label className="form-label">PRIORIDAD</label>
-              <select className="form-select" value={newProjectPriority} onChange={(e) => setNewProjectPriority(e.target.value as any)}>
+              <select className="form-select" value={newProjectPriority} onChange={(e) => setNewProjectPriority(e.target.value as any)} style={{ border: "1px solid #3b82f6", outline: "none" }}>
                 <option value="low">Baja</option>
                 <option value="medium">Media</option>
                 <option value="high">Alta</option>
@@ -170,40 +187,38 @@ export default function KanbanBoard({ tasks, onAssign, onTaskMove }: { tasks: Ta
               className={`btn-primary ${!newProjectName.trim() || !currentUser || creatingProject ? "disabled" : ""}`}
               onClick={handleCreateProject}
               disabled={!newProjectName.trim() || !currentUser || creatingProject}
-              style={{ height: 40 }}
+              style={{ height: 40, marginTop: 8 }}
             >
               {creatingProject ? "Creando..." : "Crear"}
             </button>
             {projectError && (
-              <p style={{ gridColumn: "1 / -1", color: "var(--color-error)", fontSize: 11 }}>{projectError}</p>
+              <p style={{ color: "var(--color-error)", fontSize: 11 }}>{projectError}</p>
             )}
           </div>
+        ) : (
+          columns.map((col) => (
+            <div 
+              key={col.id} 
+              className="kanban-column"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, col.id)}
+            >
+              <div className="col-header">
+                <span className="col-label">{col.label}</span>
+                <span className="col-count">/ {String(col.items.length).padStart(2, "0")}</span>
+              </div>
+              <div className="col-items">
+                {col.items.map(task => <TaskCard key={task.id} task={task} onAssign={onAssign} />)}
+                {col.id === "pending" && (
+                  <button className="add-col-btn" onClick={() => navigate("/tasks/new")}>
+                    + AÑADIR TAREA
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
         )}
-      </header>
-
-      <div className="kanban-columns">
-        {columns.map((col) => (
-          <div 
-            key={col.id} 
-            className="kanban-column"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, col.id)}
-          >
-            <div className="col-header">
-              <span className="col-label">{col.label}</span>
-              <span className="col-count">/ {String(col.items.length).padStart(2, "0")}</span>
-            </div>
-            <div className="col-items">
-              {col.items.map(task => <TaskCard key={task.id} task={task} onAssign={onAssign} />)}
-              {col.id === "pending" && (
-                <button className="add-col-btn" onClick={() => navigate("/tasks/new")}>
-                  + AÑADIR TAREA
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
 
       <button className="fab" onClick={() => navigate("/tasks/new")}>+</button>
