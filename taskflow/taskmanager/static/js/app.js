@@ -1,17 +1,44 @@
-// ─── Theme toggle ───
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
+// ─── Theme ───
+const PREMIUM_COLORS = ['pink', 'red', 'blue', 'green'];
+
+function applyTheme(base, color) {
+  document.documentElement.setAttribute('data-theme', base || 'dark');
+  document.documentElement.setAttribute('data-color', color || 'default');
+  const isLight = base === 'light';
   const sun = document.getElementById('theme-icon-sun');
   const moon = document.getElementById('theme-icon-moon');
-  if (sun) sun.style.display = theme === 'light' ? 'block' : 'none';
-  if (moon) moon.style.display = theme === 'light' ? 'none' : 'block';
+  if (sun) sun.style.display = isLight ? 'block' : 'none';
+  if (moon) moon.style.display = isLight ? 'none' : 'block';
+  document.querySelectorAll('.theme-swatch[data-color]').forEach(el => {
+    el.classList.toggle('active', el.dataset.color === (color || 'default'));
+  });
 }
+
+function setBaseTheme(base) {
+  const color = document.documentElement.getAttribute('data-color') || 'default';
+  applyTheme(base, color);
+  fetch('/accounts/set-theme/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'base=' + encodeURIComponent(base),
+  }).catch(() => {});
+}
+
+function setAccentColor(color, isPremium) {
+  if (PREMIUM_COLORS.includes(color) && !isPremium) return;
+  const base = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(base, color);
+  fetch('/accounts/set-theme/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'color=' + encodeURIComponent(color),
+  }).catch(() => {});
+}
+
 function toggleTheme() {
-  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  localStorage.setItem('theme', next);
-  applyTheme(next);
+  const curr = document.documentElement.getAttribute('data-theme') || 'dark';
+  setBaseTheme(curr === 'light' ? 'dark' : 'light');
 }
-applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ─── Modal helpers ───
 function openModal(id) {

@@ -26,6 +26,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('manager', 'Manager'),
         ('member', 'Miembro'),
     ]
+    BASE_THEME_CHOICES = [
+        ('dark', 'Oscuro'),
+        ('light', 'Claro'),
+    ]
+    ACCENT_CHOICES = [
+        ('default', 'Por defecto'),
+        ('pink', 'Rosa'),
+        ('red', 'Rojo'),
+        ('blue', 'Azul'),
+        ('green', 'Verde'),
+    ]
+    PREMIUM_THEMES = {'pink', 'red', 'blue', 'green'}
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -34,6 +46,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_premium = models.BooleanField(default=False)
+    base_theme = models.CharField(max_length=10, choices=BASE_THEME_CHOICES, default='dark')
+    color_theme = models.CharField(max_length=20, choices=ACCENT_CHOICES, default='default')
     last_login_at = models.DateTimeField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
 
