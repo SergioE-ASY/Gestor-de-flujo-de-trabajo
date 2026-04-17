@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span><a href="{% url 'org_list' %}">Organizaciones</a><span class="breadcrumb-sep">/</span>{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:40px auto 0;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">{{ title }}</h2>
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Nombre de la organización *</label>
+        <input type="text" name="name" class="form-control" placeholder="Ej: Acme Corp" required value="{{ org.name|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ID CRM (opcional)</label>
+        <input type="text" name="crm_company_id" class="form-control" placeholder="ID externo de CRM" value="{{ org.crm_company_id|default:'' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Logo (opcional)</label>
+        <input type="file" name="logo" class="form-control" accept="image/*">
+      </div>
+      <div class="form-actions">
+        <a href="{% url 'org_list' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">{{ title }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

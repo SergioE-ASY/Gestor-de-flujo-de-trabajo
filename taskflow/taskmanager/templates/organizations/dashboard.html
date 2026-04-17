@@ -1,0 +1,99 @@
+{% extends 'base/base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:24px;">
+  <h1 style="font-size:1.4rem;font-weight:700;">Hola, {{ user.name.split.0 }} 👋</h1>
+  <p class="text-muted" style="font-size:0.9rem;margin-top:4px;">Aquí tienes un resumen de tu actividad.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" style="margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--accent);">{{ my_tasks_count }}</div>
+    <div class="stat-label">Tareas pendientes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" style="color:var(--danger);">{{ overdue_count }}</div>
+    <div class="stat-label">Tareas vencidas</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ user_orgs|length }}</div>
+    <div class="stat-label">Organizaciones</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ user_projects|length }}</div>
+    <div class="stat-label">Proyectos activos</div>
+  </div>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+  <!-- Projects -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Mis Proyectos</span>
+      <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm">+ Nuevo</a>
+    </div>
+    {% if user_projects %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for project in user_projects %}
+      <a href="{% url 'project_detail' project.pk %}" style="display:block;text-decoration:none;">
+        <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:var(--font-mono);font-size:0.72rem;background:var(--accent-light);color:var(--accent);padding:2px 6px;border-radius:4px;">{{ project.key }}</span>
+              <span style="font-weight:500;font-size:0.875rem;color:var(--text);">{{ project.name }}</span>
+            </div>
+            <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+          </div>
+          {% with stats=project.get_task_stats %}
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="progress" style="flex:1;">
+              <div class="progress-bar {% if stats.progress == 100 %}success{% endif %}" style="width:{{ stats.progress }}%"></div>
+            </div>
+            <span class="text-muted text-sm">{{ stats.done }}/{{ stats.total }}</span>
+          </div>
+          {% endwith %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>Sin proyectos</h3>
+      <p>Crea tu primer proyecto para empezar.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Organizations -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Organizaciones</span>
+      <a href="{% url 'org_create' %}" class="btn btn-secondary btn-sm">+ Nueva</a>
+    </div>
+    {% if user_orgs %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for mem in user_orgs %}
+      <a href="{% url 'org_detail' mem.organization.pk %}" style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div class="avatar" style="background:var(--bg2);border:1px solid var(--border);">
+          {% if mem.organization.logo %}<img src="{{ mem.organization.logo.url }}" alt="">{% else %}{{ mem.organization.name|first|upper }}{% endif %}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:500;font-size:0.875rem;color:var(--text);">{{ mem.organization.name }}</div>
+          <div class="text-muted text-sm">{{ mem.get_role_display }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🏢</div>
+      <h3>Sin organizaciones</h3>
+      <p>Crea una organización para colaborar.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

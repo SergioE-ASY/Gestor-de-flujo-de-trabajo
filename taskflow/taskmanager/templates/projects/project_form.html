@@ -1,0 +1,82 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>
+{% if project %}<a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a><span class="breadcrumb-sep">/</span>{% endif %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">{{ title }}</h2>
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      {% if not project %}
+      <div class="form-group">
+        <label class="form-label">Organización *</label>
+        <select name="organization" class="form-control" required>
+          <option value="">Selecciona una organización</option>
+          {% for mem in user_orgs %}
+          <option value="{{ mem.organization.pk }}">{{ mem.organization.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre del proyecto *</label>
+          <input type="text" name="name" class="form-control" placeholder="Ej: Portal del Cliente" required value="{{ project.name|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Clave * (máx. 10 chars)</label>
+          <input type="text" id="id-key" name="key" class="form-control" placeholder="Ej: PC" required
+                 value="{{ project.key|default:'' }}" maxlength="10"
+                 {% if project %}readonly style="font-family:var(--font-mono);"{% endif %}>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea name="description" class="form-control" rows="3" placeholder="¿De qué trata este proyecto?">{{ project.description|default:'' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select name="status" class="form-control">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select name="priority" class="form-control">
+            {% for value, label in priority_choices %}
+            <option value="{{ value }}" {% if project.priority == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha de inicio</label>
+          <input type="date" name="start_date" class="form-control" value="{{ project.start_date|date:'Y-m-d'|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha límite</label>
+          <input type="date" name="due_date" class="form-control" value="{{ project.due_date|date:'Y-m-d'|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{% if project %}{% url 'project_detail' project.pk %}{% else %}{% url 'dashboard' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">{{ title }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

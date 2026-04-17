@@ -1,0 +1,57 @@
+{% extends 'base/base.html' %}
+{% block title %}Mis Tareas{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>Mis Tareas{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <h2 style="font-size:1.2rem;font-weight:700;">Mis Tareas</h2>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <a href="{% url 'my_tasks' %}" class="btn {% if not selected_status %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">Todas</a>
+    {% for value, label in status_choices %}
+    <a href="?status={{ value }}" class="btn {% if selected_status == value %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if tasks %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Tarea</th>
+        <th>Proyecto</th>
+        <th>Estado</th>
+        <th>Prioridad</th>
+        <th>Sprint</th>
+        <th>Vence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in tasks %}
+      <tr style="cursor:pointer;" onclick="window.location='{% url 'task_detail' task.project.pk task.pk %}'">
+        <td>
+          <div style="font-weight:500;font-size:0.875rem;">{{ task.title }}</div>
+          <div class="text-muted text-sm" style="font-family:var(--font-mono);font-size:0.7rem;">{{ task.project.key }}-{{ task.project_sequence }}</div>
+        </td>
+        <td>
+          <a href="{% url 'project_detail' task.project.pk %}" onclick="event.stopPropagation();" style="font-size:0.85rem;color:var(--accent);">{{ task.project.name }}</a>
+        </td>
+        <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span></td>
+        <td><span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
+        <td class="text-muted text-sm">{{ task.sprint.name|default:"—" }}</td>
+        <td class="{% if task.is_overdue %}text-danger{% else %}text-muted{% endif %} text-sm">
+          {{ task.due_date|date:"d M Y"|default:"—" }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">✅</div>
+  <h3>Sin tareas{% if selected_status %} con este estado{% endif %}</h3>
+  <p>{% if selected_status %}Prueba con otro filtro.{% else %}¡Todo al día!{% endif %}</p>
+</div>
+{% endif %}
+{% endblock %}

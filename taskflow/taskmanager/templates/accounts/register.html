@@ -1,0 +1,50 @@
+{% extends 'base/base.html' %}
+{% block auth_content %}
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div style="display:inline-flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:white;">T</div>
+        <h1>Task<span>Flow</span></h1>
+      </div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-title">Crear cuenta</div>
+      <div class="auth-subtitle">Empieza a gestionar tus proyectos</div>
+
+      {% if form.non_field_errors %}
+      <div class="messages"><div class="message message-error">{{ form.non_field_errors.0 }}</div></div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger text-sm mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="text-danger text-sm mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          {{ form.password1 }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmar contraseña</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}<div class="text-danger text-sm mt-1">{{ form.password2.errors.0 }}</div>{% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;">
+          Crear cuenta
+        </button>
+      </form>
+    </div>
+    <div class="auth-footer">
+      ¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
