@@ -1,0 +1,151 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ org.name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span><a href="{% url 'org_list' %}">Organizaciones</a><span class="breadcrumb-sep">/</span>{{ org.name }}{% endblock %}
+{% block topbar_actions %}
+  {% if membership.role in 'owner,admin' %}
+  <button class="btn btn-secondary btn-sm" onclick="openModal('invite-modal')">+ Invitar miembro</button>
+  {% endif %}
+  <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm">+ Nuevo proyecto</a>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+  <div class="avatar avatar-lg" style="border-radius:12px;width:56px;height:56px;font-size:1.3rem;">
+    {% if org.logo %}<img src="{{ org.logo.url }}" alt="">{% else %}{{ org.name|first|upper }}{% endif %}
+  </div>
+  <div>
+    <h1 style="font-size:1.3rem;font-weight:700;">{{ org.name }}</h1>
+    <div class="text-muted text-sm">Tu rol: {{ membership.get_role_display }} · Miembro desde {{ membership.joined_at|date:"d M Y" }}</div>
+  </div>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+  <!-- Projects -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Proyectos ({{ projects|length }})</span>
+    </div>
+    {% if projects %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for project in projects %}
+      <a href="{% url 'project_detail' project.pk %}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);text-decoration:none;transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--font-mono);font-size:0.72rem;background:var(--accent-light);color:var(--accent);padding:2px 6px;border-radius:4px;">{{ project.key }}</span>
+          <span style="font-size:0.875rem;font-weight:500;color:var(--text);">{{ project.name }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge badge-{{ project.priority }}">{{ project.get_priority_display }}</span>
+          <span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:24px;">
+      <p>Sin proyectos aún.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Members -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Miembros ({{ members|length }})</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for mem in members %}
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--radius-sm);">
+        <div class="avatar avatar-sm">
+          {% if mem.user.avatar %}<img src="{{ mem.user.avatar.url }}" alt="">{% else %}{{ mem.user.get_initials }}{% endif %}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.875rem;font-weight:500;">{{ mem.user.name }}</div>
+          <div class="text-muted text-sm truncate">{{ mem.user.email }}</div>
+        </div>
+        <span class="badge badge-{{ mem.role }}">{{ mem.get_role_display }}</span>
+        {% if membership.role in 'owner,admin' and mem.user != user %}
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="openEditRole('{{ mem.pk }}', '{{ mem.user.name }}', '{{ mem.role }}')">Editar</button>
+          <form method="post" action="{% url 'org_member_remove' org.pk mem.pk %}" style="display:inline;" onsubmit="return confirm('¿Eliminar a {{ mem.user.name }} de la organización?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Invite modal -->
+{% if membership.role in 'owner,admin' %}
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Invitar miembro</span>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeModal('invite-modal')">✕</button>
+    </div>
+    <form method="post" action="{% url 'org_invite' org.pk %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Email del usuario *</label>
+          <input type="email" name="email" class="form-control" placeholder="usuario@ejemplo.com" required>
+          <div class="text-muted text-sm mt-1">El usuario debe estar registrado en la plataforma.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select name="role" class="form-control">
+            <option value="member">Miembro</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('invite-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Invitar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Edit role modal -->
+{% if membership.role in 'owner,admin' %}
+<div class="modal-overlay" id="edit-role-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-header">
+      <span class="modal-title">Editar rol de <span id="edit-role-name"></span></span>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeModal('edit-role-modal')">✕</button>
+    </div>
+    <form method="post" id="edit-role-form">
+      {% csrf_token %}
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Rol</label>
+          <select name="role" id="edit-role-select" class="form-control">
+            <option value="member">Miembro</option>
+            <option value="admin">Administrador</option>
+            <option value="owner">Propietario</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('edit-role-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openEditRole(memberPk, name, currentRole) {
+  document.getElementById('edit-role-name').textContent = name;
+  document.getElementById('edit-role-select').value = currentRole;
+  document.getElementById('edit-role-form').action = '/organizations/{{ org.pk }}/members/' + memberPk + '/role/';
+  openModal('edit-role-modal');
+}
+</script>
+{% endif %}
+{% endblock %}

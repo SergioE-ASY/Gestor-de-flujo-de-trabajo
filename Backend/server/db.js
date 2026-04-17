@@ -32,6 +32,14 @@ const TaskTag = require('../models/task_tag.js')(sequelize);
 const TimeLog = require('../models/time_log.js')(sequelize);
 const User = require('../models/user.js')(sequelize);
 
+
+sequelize.sync()
+  .then(() => {
+    console.log("DB sincronizada con Sequelize");
+  })
+  .catch(err => {
+    console.error("Error sync:", err);
+  });
 // --- Asociaciones ---
 
 // Organization <-> User (N:M a través de OrganizationUser)
@@ -126,13 +134,7 @@ sequelize.afterSync(() => {
 
 // Importante: evitar alter automático para no forzar casts de ENUM
 // (ej: user_role -> enum_users_role). Se usa el esquema existente de la BD.
-sequelize.sync()
-  .then(() => {
-    console.log("DB sincronizada con Sequelize");
-  })
-  .catch(err => {
-    console.error("Error sync:", err);
-  });
+
 
 module.exports = {
     sequelize,

@@ -1,0 +1,40 @@
+{% extends 'base/base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>Perfil{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:40px auto 0;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">Mi Perfil</h2>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+      <div class="avatar avatar-lg">
+        {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.get_initials }}{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:600;">{{ user.name }}</div>
+        <div class="text-muted text-sm">{{ user.email }}</div>
+        <div class="text-muted text-sm">{{ user.get_role_display }}</div>
+      </div>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        {{ form.name }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        {{ form.email }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Avatar</label>
+        {{ form.avatar }}
+      </div>
+      <div class="form-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
