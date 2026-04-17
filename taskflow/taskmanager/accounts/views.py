@@ -2,8 +2,12 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .forms import LoginForm, RegisterForm, ProfileForm
+
+PREMIUM_THEMES = {'pink', 'red', 'blue', 'green'}
 
 
 def login_view(request):
@@ -51,5 +55,32 @@ def profile_view(request):
             form.save()
             messages.success(request, 'Perfil actualizado correctamente.')
             return redirect('profile')
-    
+
     return render(request, 'accounts/profile.html', {'form': form})
+
+
+@login_required
+@require_POST
+def set_theme_view(request):
+    base = request.POST.get('base')
+    color = request.POST.get('color')
+    fields = []
+
+    if base is not None:
+        if base not in {'dark', 'light'}:
+            return JsonResponse({'error': 'Base inválida'}, status=400)
+        request.user.base_theme = base
+        fields.append('base_theme')
+
+    if color is not None:
+        valid_colors = {'default'} | PREMIUM_THEMES
+        if color not in valid_colors:
+            return JsonResponse({'error': 'Color inválido'}, status=400)
+        if color in PREMIUM_THEMES and not request.user.is_premium:
+            return JsonResponse({'error': 'Requiere plan Premium'}, status=403)
+        request.user.color_theme = color
+        fields.append('color_theme')
+
+    if fields:
+        request.user.save(update_fields=fields)
+    return JsonResponse({'ok': True})
