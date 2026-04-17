@@ -60,6 +60,29 @@ def profile_view(request):
 
 
 @login_required
+def pricing_view(request):
+    free_features = [
+        'Proyectos ilimitados',
+        'Gestión de tareas (Kanban y lista)',
+        'Organizaciones y equipos',
+        'Notificaciones en tiempo real',
+        'Modo claro y oscuro',
+        'Perfil con avatar',
+    ]
+    premium_features = [
+        'Temas de color exclusivos (Rosa, Rojo, Azul, Verde)',
+        'Temas combinados claro/oscuro con color',
+        'Soporte prioritario',
+        'Próximamente: informes avanzados',
+        'Próximamente: integraciones externas',
+    ]
+    return render(request, 'accounts/pricing.html', {
+        'free_features': free_features,
+        'premium_features': premium_features,
+    })
+
+
+@login_required
 @require_POST
 def set_theme_view(request):
     base = request.POST.get('base')
