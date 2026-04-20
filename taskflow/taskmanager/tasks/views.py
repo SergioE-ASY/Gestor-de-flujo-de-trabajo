@@ -6,15 +6,17 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from projects.models import Project, ProjectMember
 from .models import Task, Tag, Comment, Attachment, TimeLog, TaskTag
-from .permissions import (
-    can_edit_this_task, can_delete_this_task,
-    can_delete_comment, can_log_time, can_upload_attachment,
+from .permissions import can_delete_comment
+from projects.permissions import (
+    can_create_task, can_edit_task, can_delete_task,
+    can_update_task_status, can_log_time, can_upload_attachment,
+    can_manage_tags,
 )
 from shared.decorators import require_project_member, project_permission
 
 
 @login_required
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_create_task, pk_kwarg='project_pk')
 def task_create(request, project_pk, project=None, membership=None):
     if request.method == 'POST':
         task = Task.objects.create(
@@ -83,13 +85,9 @@ def task_detail(request, project_pk, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_edit_task, pk_kwarg='project_pk')
 def task_edit(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)
-
-    if not can_edit_this_task(membership):
-        messages.error(request, 'Sin permisos para editar tareas.')
-        return redirect('task_detail', project_pk=project_pk, pk=pk)
 
     if request.method == 'POST':
         task.title = request.POST.get('title', task.title)
@@ -134,11 +132,8 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
 
 @login_required
 @require_POST
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_delete_task, pk_kwarg='project_pk')
 def task_delete(request, project_pk, pk, project=None, membership=None):
-    if not can_delete_this_task(membership):
-        messages.error(request, 'Sin permisos para eliminar tareas.')
-        return redirect('task_detail', project_pk=project_pk, pk=pk)
     task = get_object_or_404(Task, pk=pk, project=project)
     task_title = task.title
     task.delete()
@@ -148,7 +143,7 @@ def task_delete(request, project_pk, pk, project=None, membership=None):
 
 @login_required
 @require_POST
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_update_task_status, pk_kwarg='project_pk')
 def task_update_status(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)
     new_status = request.POST.get('status')
@@ -192,11 +187,8 @@ def comment_delete(request, project_pk, task_pk, pk, project=None, membership=No
 
 @login_required
 @require_POST
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_upload_attachment, pk_kwarg='project_pk')
 def attachment_upload(request, project_pk, task_pk, project=None, membership=None):
-    if not can_upload_attachment(membership):
-        messages.error(request, 'Sin permisos para subir archivos.')
-        return redirect('task_detail', project_pk=project_pk, pk=task_pk)
     task = get_object_or_404(Task, pk=task_pk, project=project)
     file = request.FILES.get('file')
     if file:
@@ -207,11 +199,8 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
 
 @login_required
 @require_POST
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_log_time, pk_kwarg='project_pk')
 def timelog_create(request, project_pk, task_pk, project=None, membership=None):
-    if not can_log_time(membership):
-        messages.error(request, 'Sin permisos para registrar tiempo.')
-        return redirect('task_detail', project_pk=project_pk, pk=task_pk)
     task = get_object_or_404(Task, pk=task_pk, project=project)
     minutes = request.POST.get('minutes')
     if minutes and int(minutes) > 0:
@@ -226,7 +215,7 @@ def timelog_create(request, project_pk, task_pk, project=None, membership=None):
 
 
 @login_required
-@require_project_member(pk_kwarg='project_pk')
+@project_permission(can_manage_tags, pk_kwarg='project_pk')
 def tag_create(request, project_pk, project=None, membership=None):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
