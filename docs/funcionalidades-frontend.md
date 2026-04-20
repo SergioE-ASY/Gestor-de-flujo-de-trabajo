@@ -1,6 +1,8 @@
-# ⚙️ Funcionalidades del Frontend
+# Funcionalidades del Frontend (prototipo React)
 
-Este documento detalla las principales funcionalidades implementadas en el cliente visual de la aplicación. La interfaz está construida con **React + TypeScript (Vite)** y hace uso de un servidor provisional `json-server` para simular la API real durante la fase de maqueta.
+> **Estado:** Este documento describe el **prototipo de maqueta** ubicado en `Frontend/`. La interfaz de producción se sirve directamente desde las plantillas Django en `taskflow/taskmanager/templates/`. Consulta [arquitectura.md](arquitectura.md) para la arquitectura actual.
+
+La maqueta está construida con **React + TypeScript (Vite)** y consume un servidor provisional `json-server` para simular la API durante el diseño visual.
 
 ---
 

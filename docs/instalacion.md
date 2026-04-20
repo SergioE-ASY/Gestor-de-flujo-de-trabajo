@@ -1,49 +1,123 @@
-# ⚙️ Instalación y Puesta en Marcha
+# Instalación y Puesta en Marcha
 
-Sigue estos sencillos pasos para tener tu entorno local del **Gestor de Flujo de Trabajo** operando bajo Docker, o bien para hacer un desarrollo desacoplado del frontend y backend de manera manual.
+## Requisitos Previos
 
-## 📋 Requisitos Previos
-
-Si deseas la opción más automatizada, necesitas:
-- [Git](https://git-scm.com/)
-- [Docker y Docker Compose](https://www.docker.com/)
-
-Si deseas ejecutarlo manualmente:
-- Node.js u otra runtime de programación correspondiente a tu Backend/Frontend.
+- Python 3.13
+- PostgreSQL 14+
+- Git
 
 ---
 
-## 🚀 Opción 1: Levantarlo mediante Docker (Recomendado)
+## Opción 1: Docker (recomendado)
 
-Asegúrate de tener un motor de Docker corriendo en tu máquina actual y en la raíz ejecuta:
+Asegúrate de tener Docker y Docker Compose instalados y ejecuta en la raíz del repositorio:
 
 ```bash
 docker-compose up -d --build
 ```
-Este comando construirá de forma aislada las imágenes del Backend, el Frontend y cualquier servicio auxiliar que el proyecto necesite, montándolos en la red virtual especificada en `docker-compose.yml`.
+
+Esto levanta el contenedor Django y la base de datos PostgreSQL en la red virtual configurada.
 
 ---
 
-## 💻 Opción 2: Desarrollo Manual
+## Opción 2: Entorno local manual
 
-Si tienes pensado contribuir al código específico de un servicio y prefieres arrancar la capa por separado para depurar (`debug`), entraremos en la terminal de cada carpeta:
+### 1. Clonar el repositorio
 
-### Lanzar Frontend
 ```bash
-cd Frontend
-# (Revisar administrador de paquetes de tu preferencia si es npm, yarn, pnpm)
-npm install
-npm run dev
+git clone <url-del-repo>
+cd Gestor-de-flujo-de-trabajo/taskflow/taskmanager
 ```
 
-### Lanzar Backend
+### 2. Crear y activar el entorno virtual
+
 ```bash
-cd Backend
-# (De forma similar)
-npm install
-npm run dev
+python3.13 -m venv venv
+source venv/bin/activate        # Linux / macOS
+# venv\Scripts\activate         # Windows
 ```
-*(Asegúrate de que no haya colisiones de puertos localmente y de que la URL de tu base de datos sea alcanzable de forma local)*
+
+### 3. Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configurar variables de entorno
+
+Copia el fichero de ejemplo y edítalo con tus credenciales:
+
+```bash
+cp .env.example .env
+```
+
+Variables clave en `.env`:
+
+```env
+SECRET_KEY=<clave-secreta-django>
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+DB_NAME=taskmanager
+DB_USER=<tu-usuario-postgres>
+DB_PASSWORD=<tu-password>   # dejar vacío si usas autenticación peer (socket Unix)
+DB_HOST=                    # dejar vacío para socket Unix, o 'localhost' para TCP
+DB_PORT=5432
+```
+
+> **Autenticación por socket (Unix):** Si PostgreSQL está configurado con `peer` auth, deja `DB_HOST` y `DB_PASSWORD` vacíos y usa tu usuario del sistema como `DB_USER`.
+
+### 5. Crear la base de datos
+
+```bash
+createdb taskmanager          # peer auth (si tu usuario tiene permisos)
+# o con contraseña:
+psql -U postgres -c "CREATE DATABASE taskmanager;"
+```
+
+### 6. Aplicar migraciones
+
+```bash
+python manage.py migrate
+```
+
+### 7. Crear superusuario
+
+```bash
+python manage.py createsuperuser
+```
+
+### 8. Cargar archivos estáticos (solo producción)
+
+```bash
+python manage.py collectstatic
+```
+
+### 9. Arrancar el servidor de desarrollo
+
+```bash
+python manage.py runserver
+```
+
+La aplicación estará disponible en `http://localhost:8000`.  
+El panel de administración en `http://localhost:8000/admin/`.  
+La API REST en `http://localhost:8000/api/v1/`.
+
+---
+
+## Notas de producción
+
+- Cambia `DEBUG=False` y genera un `SECRET_KEY` seguro en `.env`
+- Configura `ALLOWED_HOSTS` con tu dominio real
+- Sustituye `LocMemCache` por Redis en `CACHES` para que el rate limiting sea efectivo en entornos multi-proceso:
+  ```python
+  CACHES = {
+      'default': {
+          'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+          'LOCATION': 'redis://127.0.0.1:6379/1',
+      }
+  }
+  ```
 
 ---
 
