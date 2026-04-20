@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from .models import Organization, OrganizationUser
+from .permissions import can_manage_members
+from shared.decorators import require_org_member, org_permission
 from projects.models import Project
 
 User = get_user_model()
@@ -11,13 +13,11 @@ User = get_user_model()
 @login_required
 def dashboard(request):
     user_orgs = OrganizationUser.objects.filter(user=request.user).select_related('organization')
-    
-    # Get user's projects across all orgs
+
     user_projects = Project.objects.filter(
         members__user=request.user, deleted_at__isnull=True
     ).select_related('organization', 'owner').distinct()[:6]
 
-    # Stats
     from tasks.models import Task
     from django.utils import timezone
     my_tasks = Task.objects.filter(assignee=request.user).exclude(status='done')
@@ -57,30 +57,21 @@ def org_create(request):
 
 
 @login_required
-def org_detail(request, pk):
-    org = get_object_or_404(Organization, pk=pk)
-    membership = get_object_or_404(OrganizationUser, organization=org, user=request.user)
+@require_org_member()
+def org_detail(request, pk, org=None, org_membership=None):
     members = org.get_active_members()
     projects = Project.objects.filter(organization=org, deleted_at__isnull=True).select_related('owner')
-    
-    context = {
+    return render(request, 'organizations/org_detail.html', {
         'org': org,
-        'membership': membership,
+        'membership': org_membership,
         'members': members,
         'projects': projects,
-    }
-    return render(request, 'organizations/org_detail.html', context)
+    })
 
 
 @login_required
-def org_invite(request, pk):
-    org = get_object_or_404(Organization, pk=pk)
-    membership = get_object_or_404(OrganizationUser, organization=org, user=request.user)
-    
-    if membership.role not in ('owner', 'admin'):
-        messages.error(request, 'No tienes permisos para invitar miembros.')
-        return redirect('org_detail', pk=pk)
-    
+@org_permission(can_manage_members)
+def org_invite(request, pk, org=None, org_membership=None):
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         role = request.POST.get('role', 'member')
@@ -96,18 +87,12 @@ def org_invite(request, pk):
                 messages.warning(request, f'{user.name} ya es miembro.')
         except User.DoesNotExist:
             messages.error(request, f'No se encontró usuario con email {email}.')
-        return redirect('org_detail', pk=pk)
-
     return redirect('org_detail', pk=pk)
 
 
 @login_required
-def org_member_remove(request, pk, member_pk):
-    org = get_object_or_404(Organization, pk=pk)
-    membership = get_object_or_404(OrganizationUser, organization=org, user=request.user)
-    if membership.role not in ('owner', 'admin'):
-        messages.error(request, 'No tienes permisos para eliminar miembros.')
-        return redirect('org_detail', pk=pk)
+@org_permission(can_manage_members)
+def org_member_remove(request, pk, member_pk, org=None, org_membership=None):
     member = get_object_or_404(OrganizationUser, pk=member_pk, organization=org)
     if request.method == 'POST' and member.user != request.user:
         name = member.user.name
@@ -117,12 +102,8 @@ def org_member_remove(request, pk, member_pk):
 
 
 @login_required
-def org_member_update(request, pk, member_pk):
-    org = get_object_or_404(Organization, pk=pk)
-    membership = get_object_or_404(OrganizationUser, organization=org, user=request.user)
-    if membership.role not in ('owner', 'admin'):
-        messages.error(request, 'No tienes permisos para editar roles.')
-        return redirect('org_detail', pk=pk)
+@org_permission(can_manage_members)
+def org_member_update(request, pk, member_pk, org=None, org_membership=None):
     member = get_object_or_404(OrganizationUser, pk=member_pk, organization=org)
     if request.method == 'POST':
         role = request.POST.get('role')
