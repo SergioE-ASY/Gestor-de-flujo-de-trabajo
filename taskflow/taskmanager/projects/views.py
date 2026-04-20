@@ -5,30 +5,20 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import Project, ProjectMember, Sprint
+from .permissions import (
+    can_edit_project, can_delete_project,
+    can_manage_members, can_manage_sprints,
+)
+from shared.decorators import require_project_member, project_permission
 from organizations.models import Organization, OrganizationUser
 
 User = get_user_model()
 
 
-def require_project_access(view_func):
-    def wrapper(request, *args, **kwargs):
-        pk = kwargs.get('pk')
-        project = get_object_or_404(Project, pk=pk, deleted_at__isnull=True)
-        membership = ProjectMember.objects.filter(project=project, user=request.user).first()
-        if not membership:
-            messages.error(request, 'No tienes acceso a este proyecto.')
-            return redirect('dashboard')
-        kwargs['project'] = project
-        kwargs['membership'] = membership
-        return view_func(request, *args, **kwargs)
-    wrapper.__name__ = view_func.__name__
-    return wrapper
-
-
 @login_required
 def project_create(request):
     user_orgs = OrganizationUser.objects.filter(user=request.user).select_related('organization')
-    
+
     if request.method == 'POST':
         org_id = request.POST.get('organization')
         name = request.POST.get('name', '').strip()
@@ -54,7 +44,7 @@ def project_create(request):
                 ProjectMember.objects.create(project=project, user=request.user, role='owner')
                 messages.success(request, f'Proyecto "{project.name}" creado.')
                 return redirect('project_detail', pk=project.pk)
-    
+
     return render(request, 'projects/project_form.html', {
         'title': 'Nuevo Proyecto',
         'user_orgs': user_orgs,
@@ -64,14 +54,13 @@ def project_create(request):
 
 
 @login_required
-@require_project_access
+@require_project_member()
 def project_detail(request, pk, project=None, membership=None):
     sprints = project.sprints.all().order_by('-start_date')
     members = project.members.select_related('user').all()
     tags = project.tags.all()
     stats = project.get_task_stats()
-    
-    # Board: tasks grouped by status
+
     from tasks.models import Task
     tasks_by_status = {}
     for status_key, status_label in Task.STATUS_CHOICES:
@@ -81,7 +70,7 @@ def project_detail(request, pk, project=None, membership=None):
                           .select_related('assignee', 'sprint').prefetch_related('tags').order_by('position'),
         }
 
-    context = {
+    return render(request, 'projects/project_detail.html', {
         'project': project,
         'membership': membership,
         'sprints': sprints,
@@ -90,17 +79,12 @@ def project_detail(request, pk, project=None, membership=None):
         'stats': stats,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
-    }
-    return render(request, 'projects/project_detail.html', context)
+    })
 
 
 @login_required
-@require_project_access
+@project_permission(can_edit_project)
 def project_edit(request, pk, project=None, membership=None):
-    if membership.role not in ('owner', 'manager'):
-        messages.error(request, 'Sin permisos de edición.')
-        return redirect('project_detail', pk=pk)
-    
     if request.method == 'POST':
         project.name = request.POST.get('name', project.name)
         project.description = request.POST.get('description', project.description)
@@ -111,7 +95,7 @@ def project_edit(request, pk, project=None, membership=None):
         project.save()
         messages.success(request, 'Proyecto actualizado.')
         return redirect('project_detail', pk=pk)
-    
+
     return render(request, 'projects/project_form.html', {
         'title': 'Editar Proyecto',
         'project': project,
@@ -121,11 +105,8 @@ def project_edit(request, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_access
+@project_permission(can_delete_project)
 def project_delete(request, pk, project=None, membership=None):
-    if membership.role != 'owner':
-        messages.error(request, 'Solo el propietario puede eliminar el proyecto.')
-        return redirect('project_detail', pk=pk)
     if request.method == 'POST':
         project.soft_delete()
         messages.success(request, f'Proyecto "{project.name}" eliminado.')
@@ -134,17 +115,16 @@ def project_delete(request, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_access
+@project_permission(can_manage_members)
 def project_add_member(request, pk, project=None, membership=None):
-    if membership.role not in ('owner', 'manager'):
-        messages.error(request, 'Sin permisos.')
-        return redirect('project_detail', pk=pk)
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         role = request.POST.get('role', 'developer')
         try:
             user = User.objects.get(email=email)
-            _, created = ProjectMember.objects.get_or_create(project=project, user=user, defaults={'role': role})
+            _, created = ProjectMember.objects.get_or_create(
+                project=project, user=user, defaults={'role': role}
+            )
             if created:
                 messages.success(request, f'{user.name} añadido al proyecto.')
             else:
@@ -155,11 +135,8 @@ def project_add_member(request, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_access
+@project_permission(can_manage_members)
 def project_member_update(request, pk, member_pk, project=None, membership=None):
-    if membership.role not in ('owner', 'manager'):
-        messages.error(request, 'Sin permisos.')
-        return redirect('project_detail', pk=pk)
     member = get_object_or_404(ProjectMember, pk=member_pk, project=project)
     if request.method == 'POST':
         role = request.POST.get('role')
@@ -171,11 +148,8 @@ def project_member_update(request, pk, member_pk, project=None, membership=None)
 
 
 @login_required
-@require_project_access
+@project_permission(can_manage_members)
 def project_member_remove(request, pk, member_pk, project=None, membership=None):
-    if membership.role not in ('owner', 'manager'):
-        messages.error(request, 'Sin permisos.')
-        return redirect('project_detail', pk=pk)
     member = get_object_or_404(ProjectMember, pk=member_pk, project=project)
     if request.method == 'POST' and member.user != request.user:
         name = member.user.name
@@ -185,7 +159,7 @@ def project_member_remove(request, pk, member_pk, project=None, membership=None)
 
 
 @login_required
-@require_project_access
+@require_project_member()
 def sprint_create(request, pk, project=None, membership=None):
     if request.method == 'POST':
         Sprint.objects.create(
@@ -201,7 +175,7 @@ def sprint_create(request, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_access
+@require_project_member()
 def sprint_update(request, pk, sprint_pk, project=None, membership=None):
     sprint = get_object_or_404(Sprint, pk=sprint_pk, project=project)
     if request.method == 'POST':
