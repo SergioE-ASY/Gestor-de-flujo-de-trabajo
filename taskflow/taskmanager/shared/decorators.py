@@ -1,6 +1,11 @@
 from functools import wraps
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
+from django.http import JsonResponse
+
+
+def _is_ajax(request) -> bool:
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
 
 def require_org_member(pk_kwarg='pk'):
@@ -69,6 +74,8 @@ def require_project_member(pk_kwarg='pk'):
                 project=project, user=request.user
             ).first()
             if not membership:
+                if _is_ajax(request):
+                    return JsonResponse({'error': 'Sin acceso al proyecto'}, status=403)
                 messages.error(request, 'No tienes acceso a este proyecto.')
                 return redirect('dashboard')
             kwargs['project'] = project
@@ -81,7 +88,7 @@ def require_project_member(pk_kwarg='pk'):
 def project_permission(perm_func, pk_kwarg='pk'):
     """
     Like require_project_member but also checks perm_func(membership).
-    Redirects to project_detail when the user lacks the required permission.
+    Returns a JSON 403 for AJAX requests; redirects to project_detail otherwise.
     """
     def decorator(view_func):
         @wraps(view_func)
@@ -95,9 +102,13 @@ def project_permission(perm_func, pk_kwarg='pk'):
                 project=project, user=request.user
             ).first()
             if not membership:
+                if _is_ajax(request):
+                    return JsonResponse({'error': 'Sin acceso al proyecto'}, status=403)
                 messages.error(request, 'No tienes acceso a este proyecto.')
                 return redirect('dashboard')
             if not perm_func(membership):
+                if _is_ajax(request):
+                    return JsonResponse({'error': 'Sin permisos'}, status=403)
                 messages.error(request, 'No tienes permisos para realizar esta acción.')
                 return redirect('project_detail', pk=project_pk)
             kwargs['project'] = project

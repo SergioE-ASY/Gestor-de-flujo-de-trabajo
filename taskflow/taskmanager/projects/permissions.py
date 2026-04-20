@@ -36,3 +36,19 @@ def can_edit_task(membership) -> bool:
 
 def can_delete_task(membership) -> bool:
     return membership is not None and membership.role in ('owner', 'manager', 'developer')
+
+
+def can_manage_tags(membership) -> bool:
+    return membership is not None and membership.role in ('owner', 'manager')
+
+
+def can_update_task_status(membership) -> bool:
+    return can_edit_task(membership)
+
+
+def can_log_time(membership) -> bool:
+    return membership is not None and membership.role in ('owner', 'manager', 'developer')
+
+
+def can_upload_attachment(membership) -> bool:
+    return membership is not None and membership.role in ('owner', 'manager', 'developer')
