@@ -150,3 +150,22 @@ colorInputs.forEach(inp => {
 // ─── Key auto-uppercase ───
 const keyInput = document.getElementById('id-key');
 if (keyInput) keyInput.addEventListener('input', () => keyInput.value = keyInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
+
+// ─── Mobile menus outside click ───
+document.addEventListener('click', e => {
+  const sidebar = document.getElementById('sidebar');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  if (sidebar && sidebar.classList.contains('open') && mobileMenuBtn) {
+    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+      sidebar.classList.remove('open');
+    }
+  }
+
+  const topbarActions = document.getElementById('topbar-actions');
+  const mobileActionsBtn = document.getElementById('mobile-actions-btn');
+  if (topbarActions && topbarActions.classList.contains('open') && mobileActionsBtn) {
+    if (!topbarActions.contains(e.target) && !mobileActionsBtn.contains(e.target)) {
+      topbarActions.classList.remove('open');
+    }
+  }
+});
