@@ -1,0 +1,122 @@
+{% extends 'base/base.html' %}
+{% block title %}Planes y Tarifas{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}">Dashboard</a>
+<span class="breadcrumb-sep">/</span>
+Planes y Tarifas
+{% endblock %}
+
+{% block content %}
+<div style="max-width:860px;margin:40px auto 0;">
+
+  <div style="text-align:center;margin-bottom:40px;">
+    <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:8px;">Planes y Tarifas</h1>
+    <p style="color:var(--text-muted);font-size:0.9rem;">Elige el plan que mejor se adapte a tus necesidades.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+    <!-- Plan Gratuito -->
+    <div class="card" style="position:relative;padding:28px;">
+      {% if not user.is_premium %}
+      <span style="position:absolute;top:16px;right:16px;font-size:0.65rem;font-weight:700;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:10px;border:1px solid var(--accent);">PLAN ACTUAL</span>
+      {% endif %}
+
+      <div style="margin-bottom:24px;">
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Gratuito</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;line-height:1;">
+          <span style="font-size:2.8rem;font-weight:800;letter-spacing:-0.04em;">0€</span>
+          <span style="color:var(--text-muted);font-size:0.85rem;margin-bottom:6px;">/mes</span>
+        </div>
+        <p style="margin-top:10px;font-size:0.83rem;color:var(--text-muted);line-height:1.5;">Todo lo que necesitas para empezar a gestionar tus proyectos.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        {% for feature in free_features %}
+        <div style="display:flex;align-items:flex-start;gap:10px;font-size:0.85rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>{{ feature }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if not user.is_premium %}
+      <button class="btn btn-secondary" style="width:100%;justify-content:center;" disabled>
+        Plan actual
+      </button>
+      {% else %}
+      <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--text-muted);" disabled>
+        Plan básico
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Plan Premium -->
+    <div style="position:relative;border-radius:var(--radius);padding:2px;background:linear-gradient(135deg,#f472b6,#a78bfa,#60a5fa);">
+      <div class="card" style="position:relative;padding:28px;border:none;">
+        {% if user.is_premium %}
+        <span style="position:absolute;top:16px;right:16px;font-size:0.65rem;font-weight:700;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;padding:2px 8px;border-radius:10px;">PLAN ACTUAL</span>
+        {% else %}
+        <span style="position:absolute;top:16px;right:16px;font-size:0.65rem;font-weight:700;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;padding:2px 8px;border-radius:10px;">RECOMENDADO</span>
+        {% endif %}
+
+        <div style="margin-bottom:24px;">
+          <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;background:linear-gradient(135deg,#f472b6,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;margin-bottom:10px;">Premium</div>
+          <div style="display:flex;align-items:flex-end;gap:4px;line-height:1;">
+            <span style="font-size:2.8rem;font-weight:800;letter-spacing:-0.04em;">19,99€</span>
+            <span style="color:var(--text-muted);font-size:0.85rem;margin-bottom:6px;">/mes</span>
+          </div>
+          <p style="margin-top:10px;font-size:0.83rem;color:var(--text-muted);line-height:1.5;">Desbloquea todas las funcionalidades y personaliza tu experiencia.</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+          <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:600;">Todo lo del plan gratuito, más:</div>
+          {% for feature in premium_features %}
+          <div style="display:flex;align-items:flex-start;gap:10px;font-size:0.85rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>{{ feature }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if user.is_premium %}
+        <button class="btn" style="width:100%;justify-content:center;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;border:none;" disabled>
+          Ya tienes Premium
+        </button>
+        {% else %}
+        <button class="btn" onclick="openModal('modal-upgrade')" style="width:100%;justify-content:center;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;border:none;font-weight:600;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 11 12 6 7 11"/><line x1="12" y1="18" x2="12" y2="6"/></svg>
+          Mejorar a Premium
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <p style="text-align:center;margin-top:24px;font-size:0.8rem;color:var(--text-muted);">
+    ¿Tienes dudas? Contacta con nosotros en <a href="mailto:soporte@taskflow.com" style="color:var(--accent);">soporte@taskflow.com</a>
+  </p>
+</div>
+
+<!-- Modal mejorar plan -->
+<div class="modal-overlay" id="modal-upgrade">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Mejorar a Premium</span>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="closeModal('modal-upgrade')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:28px 24px;">
+      <div style="font-size:2rem;margin-bottom:12px;">✨</div>
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;">Activa tu Plan Premium</h3>
+      <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:20px;">
+        Para activar el Plan Premium contacta con el administrador o escríbenos y lo gestionamos en menos de 24 horas.
+      </p>
+      <a href="mailto:soporte@taskflow.com?subject=Activar%20Plan%20Premium&body=Hola%2C%20me%20gustar%C3%ADa%20activar%20el%20Plan%20Premium%20para%20mi%20cuenta%20{{ user.email }}."
+        class="btn" style="background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;border:none;font-weight:600;width:100%;justify-content:center;">
+        Contactar para activar
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

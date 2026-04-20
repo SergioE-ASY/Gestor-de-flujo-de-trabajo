@@ -43,7 +43,7 @@
 </div>
 
 <!-- Stats bar -->
-<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:20px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);">
   <div style="display:flex;align-items:center;gap:8px;flex:1;">
     <div class="progress" style="flex:1;">
       <div class="progress-bar {% if stats.progress == 100 %}success{% endif %}" style="width:{{ stats.progress }}%"></div>
@@ -123,7 +123,7 @@
 
 <!-- List Tab -->
 <div id="tab-list" style="display:none;">
-  <div class="card" style="padding:0;overflow:hidden;">
+  <div class="card" style="padding:0;overflow-x:auto;">
     <table class="table">
       <thead>
         <tr>

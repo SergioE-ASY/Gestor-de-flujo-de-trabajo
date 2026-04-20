@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}TaskFlow{% endblock %} — TaskFlow</title>
+  <title>{% block title %}e-asy{% endblock %} — e-asy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
@@ -18,8 +18,8 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">TF</div>
-      Task<span style="font-weight:400;">Flow</span>
+      <div class="logo-icon">EA</div>
+      e-<span style="font-weight:400;">asy</span>
     </div>
 
     <div class="sidebar-section">
@@ -39,6 +39,11 @@
             <span id="notif-count" class="notif-bubble" style="display:none;"></span>
           </span>
           Notificaciones
+        </a>
+        <a href="{% url 'pricing' %}" class="{% if request.resolver_match.url_name == 'pricing' %}active{% endif %}" style="{% if not user.is_premium %}background:linear-gradient(90deg,rgba(244,114,182,0.07),transparent);{% endif %}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          Planes
+          {% if not user.is_premium %}<span style="font-size:0.6rem;font-weight:700;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;padding:1px 5px;border-radius:6px;margin-left:auto;">PRO</span>{% endif %}
         </a>
       </nav>
     </div>

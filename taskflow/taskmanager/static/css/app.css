@@ -180,7 +180,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); }
 
 /* ─── Layout ─── */
-.app-wrapper { display: flex; min-height: 100vh; }
+.app-wrapper { display: flex; min-height: 100vh; width: 100%; }
 
 /* ─── Sidebar ─── */
 .sidebar {
@@ -275,6 +275,7 @@ a:hover { color: var(--accent-hover); }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
 }
 .topbar {
   background: var(--bg2);
@@ -292,7 +293,7 @@ a:hover { color: var(--accent-hover); }
 .breadcrumb a { color: var(--text-muted); }
 .breadcrumb a:hover { color: var(--text); }
 .breadcrumb-sep { color: var(--border); }
-.page-content { padding: 24px; flex: 1; }
+.page-content { padding: 24px; flex: 1; min-width: 0; }
 
 /* ─── Cards ─── */
 .card {

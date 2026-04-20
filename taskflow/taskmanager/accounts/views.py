@@ -5,15 +5,24 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django_ratelimit.decorators import ratelimit
 from .forms import LoginForm, RegisterForm, ProfileForm
 
 PREMIUM_THEMES = {'pink', 'red', 'blue', 'green'}
 
 
+def _rate_limited_response(request, template):
+    return render(request, template, {'rate_limited': True}, status=429)
+
+
+@ratelimit(key='ip', rate='5/m', method='POST', block=False)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
+
+    if getattr(request, 'limited', False):
+        return _rate_limited_response(request, 'accounts/login.html')
+
     form = LoginForm(request, data=request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -23,14 +32,18 @@ def login_view(request):
             login(request, user)
             next_url = request.GET.get('next', 'dashboard')
             return redirect(next_url)
-    
+
     return render(request, 'accounts/login.html', {'form': form})
 
 
+@ratelimit(key='ip', rate='3/m', method='POST', block=False)
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
-    
+
+    if getattr(request, 'limited', False):
+        return _rate_limited_response(request, 'accounts/register.html')
+
     form = RegisterForm(request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -38,7 +51,7 @@ def register_view(request):
             login(request, user)
             messages.success(request, f'¡Bienvenido/a, {user.name}!')
             return redirect('dashboard')
-    
+
     return render(request, 'accounts/register.html', {'form': form})
 
 
@@ -57,6 +70,29 @@ def profile_view(request):
             return redirect('profile')
 
     return render(request, 'accounts/profile.html', {'form': form})
+
+
+@login_required
+def pricing_view(request):
+    free_features = [
+        'Proyectos ilimitados',
+        'Gestión de tareas (Kanban y lista)',
+        'Organizaciones y equipos',
+        'Notificaciones en tiempo real',
+        'Modo claro y oscuro',
+        'Perfil con avatar',
+    ]
+    premium_features = [
+        'Temas de color exclusivos (Rosa, Rojo, Azul, Verde)',
+        'Temas combinados claro/oscuro con color',
+        'Soporte prioritario',
+        'Próximamente: informes avanzados',
+        'Próximamente: integraciones externas',
+    ]
+    return render(request, 'accounts/pricing.html', {
+        'free_features': free_features,
+        'premium_features': premium_features,
+    })
 
 
 @login_required
