@@ -1,0 +1,61 @@
+{% extends 'base/base.html' %}
+{% block title %}Notificaciones{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>Notificaciones{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <h2 style="font-size:1.2rem;font-weight:700;">Notificaciones</h2>
+    {% if notifications %}
+    <button class="btn btn-secondary btn-sm" onclick="markAllRead()">Marcar todas como leídas</button>
+    {% endif %}
+  </div>
+
+  {% if notifications %}
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    {% for notif in notifications %}
+    <div class="notif-item {% if notif.is_read %}{% else %}unread{% endif %}"
+         id="notif-{{ notif.pk }}"
+         style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:{% if not notif.is_read %}var(--accent-light){% else %}var(--bg2){% endif %};border:1px solid {% if not notif.is_read %}var(--accent){% else %}var(--border){% endif %};border-radius:var(--radius);transition:all 0.2s;">
+
+      <div style="font-size:1.3rem;line-height:1;margin-top:2px;">
+        {% if notif.type == 'task_assigned' %}🎯
+        {% elif notif.type == 'comment_added' %}💬
+        {% elif notif.type == 'task_due' %}⏰
+        {% elif notif.type == 'status_changed' %}🔄
+        {% elif notif.type == 'sprint_started' %}🏃
+        {% else %}🔔{% endif %}
+      </div>
+
+      <div style="flex:1;">
+        <div style="font-size:0.875rem;{% if not notif.is_read %}font-weight:500;{% endif %}">{{ notif.message }}</div>
+        <div class="text-muted text-sm" style="margin-top:4px;">
+          {{ notif.created_at|date:"d M Y, H:i" }}
+          {% if notif.project %} · <a href="{% url 'project_detail' notif.project.pk %}" style="color:var(--text-muted);">{{ notif.project.name }}</a>{% endif %}
+        </div>
+        {% if notif.task %}
+        <a href="{% url 'task_detail' notif.task.project.pk notif.task.pk %}" class="btn btn-ghost btn-sm" style="margin-top:6px;padding:3px 8px;font-size:0.78rem;">Ver tarea →</a>
+        {% endif %}
+      </div>
+
+      {% if not notif.is_read %}
+      <button onclick="markRead('{{ notif.pk }}')" class="btn btn-ghost btn-sm btn-icon" title="Marcar como leída" style="color:var(--text-muted);flex-shrink:0;">✓</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🔔</div>
+    <h3>Sin notificaciones</h3>
+    <p>Estás al día con todo.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% block extra_js %}
+<style>
+.notif-item.read { background: var(--bg2) !important; border-color: var(--border) !important; opacity: 0.7; }
+</style>
+{% endblock %}
+{% endblock %}

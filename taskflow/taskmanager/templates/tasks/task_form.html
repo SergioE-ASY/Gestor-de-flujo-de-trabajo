@@ -1,0 +1,128 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>
+<a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a><span class="breadcrumb-sep">/</span>
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">{{ title }}</h2>
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">Título *</label>
+        <input type="text" name="title" class="form-control" placeholder="Describe brevemente la tarea..." required
+               value="{{ task.title|default:'' }}" autofocus>
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select name="type" class="form-control">
+            {% for value, label in type_choices %}
+            <option value="{{ value }}" {% if task.type == value %}selected{% elif not task and value == 'task' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select name="status" class="form-control">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if task.status == value %}selected{% elif not task and value == 'backlog' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select name="priority" class="form-control">
+            {% for value, label in priority_choices %}
+            <option value="{{ value }}" {% if task.priority == value %}selected{% elif not task and value == 'medium' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea name="description" class="form-control" rows="4" placeholder="Contexto, criterios de aceptación, notas...">{{ task.description|default:'' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Asignar a</label>
+          <select name="assignee" class="form-control">
+            <option value="">Sin asignar</option>
+            {% for mem in members %}
+            <option value="{{ mem.user.pk }}" {% if task.assignee_id == mem.user.pk %}selected{% endif %}>{{ mem.user.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sprint</label>
+          <select name="sprint" class="form-control">
+            <option value="">Sin sprint</option>
+            {% for sprint in sprints %}
+            <option value="{{ sprint.pk }}" {% if task.sprint_id == sprint.pk %}selected{% endif %}>{{ sprint.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha límite</label>
+          <input type="date" name="due_date" class="form-control" value="{{ task.due_date|date:'Y-m-d'|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimación (minutos)</label>
+          <input type="number" name="estimated_min" class="form-control" placeholder="ej: 120" min="0"
+                 value="{{ task.estimated_min|default:'' }}">
+        </div>
+      </div>
+
+      {% if parent_tasks %}
+      <div class="form-group">
+        <label class="form-label">Tarea padre (subtarea de)</label>
+        <select name="parent_task" class="form-control">
+          <option value="">Ninguna (tarea independiente)</option>
+          {% for pt in parent_tasks %}
+          <option value="{{ pt.pk }}" {% if task.parent_task_id == pt.pk %}selected{% endif %}>
+            {{ project.key }}-{{ pt.project_sequence }}: {{ pt.title|truncatechars:50 }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      {% if tags %}
+      <div class="form-group">
+        <label class="form-label">Etiquetas</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {% for tag in tags %}
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:5px 10px;border-radius:20px;border:1px solid {{ tag.color }}44;background:{{ tag.color }}11;font-size:0.8rem;">
+            <input type="checkbox" name="tags" value="{{ tag.pk }}"
+                   {% if tag.pk in selected_tag_ids %}checked{% endif %}
+                   style="accent-color:{{ tag.color }};">
+            <span class="tag-dot" style="background:{{ tag.color }};"></span>
+            {{ tag.name }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-actions">
+        <a href="{% url 'project_detail' project.pk %}" class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Volver al tablón
+        </a>
+        <button type="submit" class="btn btn-primary">{{ title }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

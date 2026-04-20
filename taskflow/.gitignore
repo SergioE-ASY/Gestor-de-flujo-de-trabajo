@@ -1,0 +1,129 @@
+# ============================================================
+#  .gitignore — Gestor de Tareas con Django
+# ============================================================
+
+# ---------------------------
+# Python
+# ---------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.so
+
+# ---------------------------
+# Entornos virtuales
+# ---------------------------
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.env/
+
+# ---------------------------
+# Django
+# ---------------------------
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Archivos de migraciones generados localmente (opcional)
+# Descomenta si prefieres no versionar migraciones:
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# ---------------------------
+# Variables de entorno y secretos
+# ---------------------------
+.env
+.env.*
+!.env.example
+*.secret
+secrets.json
+
+# ---------------------------
+# Archivos estáticos recolectados
+# ---------------------------
+staticfiles/
+static_root/
+collected_static/
+
+# ---------------------------
+# Distribución / empaquetado
+# ---------------------------
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+wheels/
+
+# ---------------------------
+# Testing y cobertura
+# ---------------------------
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+nosetests.xml
+test-results/
+
+# ---------------------------
+# Cachés y herramientas
+# ---------------------------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.hypothesis/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ---------------------------
+# IDEs y editores
+# ---------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---------------------------
+# Docker
+# ---------------------------
+.dockerignore
+docker-compose.override.yml
+
+# ---------------------------
+# Node / Frontend (si usas assets JS)
+# ---------------------------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# ---------------------------
+# Celery (si usas tareas asíncronas)
+# ---------------------------
+celerybeat-schedule
+celerybeat.pid
+
+# ---------------------------
+# Redis / caché local
+# ---------------------------
+dump.rdb

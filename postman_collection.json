@@ -1,0 +1,191 @@
+{
+  "info": {
+    "name": "HGP - Endpoints Tareas & Roles",
+    "description": "Colección generada para testear los 9 nuevos endpoints implementados para estadísticas, filtrado de tareas y permisos de roles organizacionales.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Estadísticas y Agrupaciones",
+      "item": [
+        {
+          "name": "1. Porcentaje Tareas Completadas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/stats/completion-percentage",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "stats", "completion-percentage"]
+            }
+          }
+        },
+        {
+          "name": "2. Número de tareas por prioridad y estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/stats/by-priority-status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "stats", "by-priority-status"]
+            }
+          }
+        },
+        {
+          "name": "6. Tareas completadas por usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/stats/completed-by-user",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "stats", "completed-by-user"]
+            }
+          }
+        },
+        {
+          "name": "4. Tareas agrupadas por proyecto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/grouped/by-project",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "grouped", "by-project"]
+            }
+          }
+        },
+        {
+          "name": "5. Tareas agrupadas por organizacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/grouped/by-organization",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "grouped", "by-organization"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filtros y Asignaciones",
+      "item": [
+        {
+          "name": "3. Tareas filtradas por estado (done)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks?status=done",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "done"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8. Tareas filtradas por usuario (Assignee)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/tasks?assignee_id=50a7cd98-8086-4cce-aced-6f9c60029c46",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks"],
+              "query": [
+                {
+                  "key": "assignee_id",
+                  "value": "50a7cd98-8086-4cce-aced-6f9c60029c46",
+                  "description": "ID del Admin Seedeado"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "9. Asignar Tarea a Usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"assignee_id\": \"5ba157de-f8d7-4717-8631-1244b59ffbf7\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/tasks/81649d5c-58ed-44c6-bc96-0a4990b5dded/assign",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "tasks", "81649d5c-58ed-44c6-bc96-0a4990b5dded", "assign"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles Organizador",
+      "item": [
+        {
+          "name": "7. Admin edita usuarios org (Cambio a manager)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"request_user_id\": \"50a7cd98-8086-4cce-aced-6f9c60029c46\",\n    \"role\": \"manager\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/organization-users/8c03645c-30de-4285-a0f2-e2b3e684da26/users/5ba157de-f8d7-4717-8631-1244b59ffbf7",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": [
+                "api",
+                "organization-users",
+                "8c03645c-30de-4285-a0f2-e2b3e684da26",
+                "users",
+                "5ba157de-f8d7-4717-8631-1244b59ffbf7"
+              ]
+            },
+            "description": "Prueba a cambiar request_user_id por el del member, verás que arroja FORBIDDEN porque pide permisos de Admin."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": []
+}

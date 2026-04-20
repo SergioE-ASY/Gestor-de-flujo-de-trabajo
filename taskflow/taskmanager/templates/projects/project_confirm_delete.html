@@ -1,0 +1,21 @@
+{% extends 'base/base.html' %}
+{% block title %}Eliminar {{ project.name }}{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:48px auto;">
+  <div class="card" style="text-align:center;padding:36px;">
+    <div style="font-size:2.5rem;margin-bottom:16px;">⚠️</div>
+    <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">¿Eliminar proyecto?</h2>
+    <p class="text-muted" style="margin-bottom:24px;">
+      Esta acción eliminará el proyecto <strong>{{ project.name }}</strong> ({{ project.key }}) de forma permanente.
+      Todas las tareas, sprints y comentarios se perderán.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <a href="{% url 'project_detail' project.pk %}" class="btn btn-secondary">Cancelar</a>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base/base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span>Perfil{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;margin:40px auto 0;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">Mi Perfil</h2>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+      <div class="avatar avatar-lg">
+        {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.get_initials }}{% endif %}
+      </div>
+      <div>
+        <div style="font-weight:600;">{{ user.name }}</div>
+        <div class="text-muted text-sm">{{ user.email }}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+          <span class="text-muted text-sm">{{ user.get_role_display }}</span>
+          {% if user.is_premium %}
+          <span style="font-size:0.65rem;font-weight:700;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;padding:1px 7px;border-radius:10px;letter-spacing:0.04em;">PREMIUM</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Apariencia -->
+    <div id="apariencia" style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+      <div class="section-title" style="margin-bottom:14px;">Apariencia</div>
+
+      <!-- Modo base -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;">Modo</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="setBaseTheme('dark')"
+            style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:{% if user.base_theme == 'dark' %}var(--accent){% else %}var(--bg3){% endif %};color:{% if user.base_theme == 'dark' %}var(--bg){% else %}var(--text-muted){% endif %};font-size:0.82rem;cursor:pointer;font-family:var(--font);transition:all 0.15s;" id="btn-dark">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            Oscuro
+          </button>
+          <button onclick="setBaseTheme('light')"
+            style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:{% if user.base_theme == 'light' %}var(--accent){% else %}var(--bg3){% endif %};color:{% if user.base_theme == 'light' %}var(--bg){% else %}var(--text-muted){% endif %};font-size:0.82rem;cursor:pointer;font-family:var(--font);transition:all 0.15s;" id="btn-light">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Claro
+          </button>
+        </div>
+      </div>
+
+      <!-- Acento de color (premium) -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:0.78rem;color:var(--text-muted);">Color de acento</span>
+          {% if not user.is_premium %}
+          <span style="font-size:0.65rem;font-weight:600;background:var(--bg3);color:var(--text-muted);padding:1px 6px;border-radius:8px;border:1px solid var(--border);">PREMIUM</span>
+          {% endif %}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+
+          <!-- Default -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <button class="theme-swatch {% if user.color_theme == 'default' %}active{% endif %}"
+              data-color="default"
+              style="background:linear-gradient(135deg,#444,#111);"
+              onclick="setAccentColor('default', true)"
+              title="Por defecto">
+            </button>
+            <span style="font-size:0.7rem;color:var(--text-muted);">Default</span>
+          </div>
+
+          <!-- Rosa -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <button class="theme-swatch {% if user.color_theme == 'pink' %}active{% endif %} {% if not user.is_premium %}locked{% endif %}"
+              data-color="pink"
+              style="background:linear-gradient(135deg,#f472b6,#be185d);"
+              {% if user.is_premium %}onclick="setAccentColor('pink', true)"{% endif %}
+              title="{% if user.is_premium %}Rosa{% else %}Rosa — Plan Premium{% endif %}">
+              {% if not user.is_premium %}<span class="lock-icon">🔒</span>{% endif %}
+            </button>
+            <span style="font-size:0.7rem;color:var(--text-muted);">Rosa</span>
+          </div>
+
+          <!-- Rojo -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <button class="theme-swatch {% if user.color_theme == 'red' %}active{% endif %} {% if not user.is_premium %}locked{% endif %}"
+              data-color="red"
+              style="background:linear-gradient(135deg,#fb7185,#be123c);"
+              {% if user.is_premium %}onclick="setAccentColor('red', true)"{% endif %}
+              title="{% if user.is_premium %}Rojo{% else %}Rojo — Plan Premium{% endif %}">
+              {% if not user.is_premium %}<span class="lock-icon">🔒</span>{% endif %}
+            </button>
+            <span style="font-size:0.7rem;color:var(--text-muted);">Rojo</span>
+          </div>
+
+          <!-- Azul -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <button class="theme-swatch {% if user.color_theme == 'blue' %}active{% endif %} {% if not user.is_premium %}locked{% endif %}"
+              data-color="blue"
+              style="background:linear-gradient(135deg,#60a5fa,#1d4ed8);"
+              {% if user.is_premium %}onclick="setAccentColor('blue', true)"{% endif %}
+              title="{% if user.is_premium %}Azul{% else %}Azul — Plan Premium{% endif %}">
+              {% if not user.is_premium %}<span class="lock-icon">🔒</span>{% endif %}
+            </button>
+            <span style="font-size:0.7rem;color:var(--text-muted);">Azul</span>
+          </div>
+
+          <!-- Verde -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <button class="theme-swatch {% if user.color_theme == 'green' %}active{% endif %} {% if not user.is_premium %}locked{% endif %}"
+              data-color="green"
+              style="background:linear-gradient(135deg,#4ade80,#15803d);"
+              {% if user.is_premium %}onclick="setAccentColor('green', true)"{% endif %}
+              title="{% if user.is_premium %}Verde{% else %}Verde — Plan Premium{% endif %}">
+              {% if not user.is_premium %}<span class="lock-icon">🔒</span>{% endif %}
+            </button>
+            <span style="font-size:0.7rem;color:var(--text-muted);">Verde</span>
+          </div>
+        </div>
+
+        {% if not user.is_premium %}
+        <p style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);">
+          Los colores de acento están disponibles en el <strong style="color:var(--text);">Plan Premium</strong>.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        {{ form.name }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        {{ form.email }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Avatar</label>
+        {{ form.avatar }}
+      </div>
+      <div class="form-actions">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
