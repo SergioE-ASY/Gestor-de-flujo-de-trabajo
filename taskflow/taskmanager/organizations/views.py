@@ -57,6 +57,24 @@ def org_create(request):
 
 
 @login_required
+@org_permission(can_manage_members)
+def org_edit(request, pk, org=None, org_membership=None):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if not name:
+            messages.error(request, 'El nombre es obligatorio.')
+        else:
+            org.name = name
+            org.crm_company_id = request.POST.get('crm_company_id', '')
+            if 'logo' in request.FILES:
+                org.logo = request.FILES['logo']
+            org.save()
+            messages.success(request, f'Organización "{org.name}" actualizada.')
+            return redirect('org_detail', pk=org.pk)
+    return render(request, 'organizations/org_form.html', {'title': 'Editar Organización', 'org': org})
+
+
+@login_required
 @require_org_member()
 def org_detail(request, pk, org=None, org_membership=None):
     members = org.get_active_members()
