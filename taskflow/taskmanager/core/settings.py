@@ -101,6 +101,16 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
 
+# Cache — use Redis in production: django.core.cache.backends.redis.RedisCache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+# Rate limits (django-ratelimit)
+RATELIMIT_USE_CACHE = 'default'
+
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

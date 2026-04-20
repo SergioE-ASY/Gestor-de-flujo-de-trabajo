@@ -1,8 +1,11 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from projects.models import Project, ProjectMember
 from tasks.models import Task, Comment
 from projects.permissions import (
@@ -11,6 +14,27 @@ from projects.permissions import (
 from .serializers import (
     UserSerializer, ProjectSerializer, TaskSerializer, CommentSerializer,
 )
+
+_RATELIMITED_RESPONSE = Response(
+    {'error': 'Demasiadas peticiones. Inténtalo más tarde.'},
+    status=status.HTTP_429_TOO_MANY_REQUESTS,
+)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED_RESPONSE
+        return super().post(request, *args, **kwargs)
+
+
+@method_decorator(ratelimit(key='ip', rate='20/m', method='POST', block=False), name='post')
+class RateLimitedTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED_RESPONSE
+        return super().post(request, *args, **kwargs)
 
 User = get_user_model()
 
