@@ -3,10 +3,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
-from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
-from django_otp.plugins.otp_totp.models import TOTPDevice
+from django.utils.decorators import method_decorator
 from projects.models import Project, ProjectMember
 from tasks.models import Task, Comment
 from projects.permissions import (
@@ -72,6 +72,17 @@ class RateLimitedTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         if getattr(request, 'limited', False):
             return _RATELIMITED
+        return super().post(request, *args, **kwargs)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return Response(
+                {'error': 'Demasiados intentos. Espera un momento e inténtalo de nuevo.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         return super().post(request, *args, **kwargs)
 
 
