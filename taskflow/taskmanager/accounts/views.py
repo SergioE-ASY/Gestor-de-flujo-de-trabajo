@@ -149,7 +149,8 @@ def logout_view(request):
 def profile_view(request):
     form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        instance = form.save(commit=False)
+        instance.save(update_fields=['name', 'email', 'avatar'])
         messages.success(request, 'Perfil actualizado correctamente.')
         return redirect('profile')
 
