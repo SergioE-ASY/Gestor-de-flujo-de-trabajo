@@ -282,7 +282,8 @@
         <tr>
           <th>Miembro</th>
           <th style="text-align:right;">Horas registradas</th>
-          {% if hour_stats.budget %}<th style="width:200px;">Proporción</th>{% endif %}
+          {% if hour_stats.budget %}<th style="width:180px;">Proporción</th>{% endif %}
+          {% if membership.role in 'owner,manager' %}<th></th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -297,11 +298,14 @@
           <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
           {% if hour_stats.budget %}
           <td>
-            {% with pct=row.logged|floatformat:0 %}
             <div class="progress" style="height:6px;">
               <div class="progress-bar" style="width:{% widthratio row.logged hour_stats.consumed 100 %}%"></div>
             </div>
-            {% endwith %}
+          </td>
+          {% endif %}
+          {% if membership.role in 'owner,manager' %}
+          <td>
+            <a href="{% url 'member_hour_history' project.pk row.user__id %}" class="btn btn-ghost btn-sm">Ver detalle</a>
           </td>
           {% endif %}
         </tr>

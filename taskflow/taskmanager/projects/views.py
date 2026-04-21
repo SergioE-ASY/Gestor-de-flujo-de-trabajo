@@ -187,6 +187,44 @@ def project_member_remove(request, pk, member_pk, project=None, membership=None)
 
 
 @login_required
+@project_permission(can_manage_members, pk_kwarg='pk')
+def member_hour_history(request, pk, user_pk, project=None, membership=None):
+    from tasks.models import TimeLog
+    from django.db.models import Sum
+
+    target_user = get_object_or_404(User, pk=user_pk)
+    if not ProjectMember.objects.filter(project=project, user=target_user).exists():
+        messages.error(request, 'Este usuario no es miembro del proyecto.')
+        return redirect('project_detail', pk=pk)
+
+    logs = (
+        TimeLog.objects
+        .filter(project=project, user=target_user)
+        .select_related('task')
+        .order_by('-logged_date', '-task__project_sequence')
+    )
+
+    by_task = (
+        TimeLog.objects
+        .filter(project=project, user=target_user)
+        .values('task__id', 'task__title', 'task__project_sequence', 'task__status')
+        .annotate(total=Sum('hours'))
+        .order_by('-total')
+    )
+
+    total_hours = logs.aggregate(total=Sum('hours'))['total'] or 0
+
+    return render(request, 'projects/member_hour_history.html', {
+        'project': project,
+        'membership': membership,
+        'target_user': target_user,
+        'logs': logs,
+        'by_task': by_task,
+        'total_hours': total_hours,
+    })
+
+
+@login_required
 @project_permission(can_manage_sprints)
 def sprint_create(request, pk, project=None, membership=None):
     if request.method == 'POST':
