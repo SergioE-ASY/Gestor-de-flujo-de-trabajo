@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
 from .models import Organization, OrganizationUser
 from .permissions import can_manage_members, can_assign_role, is_last_owner
 from shared.decorators import require_org_member, org_permission
@@ -136,3 +137,82 @@ def org_member_update(request, pk, member_pk, org=None, org_membership=None):
             member.save()
             messages.success(request, f'Rol de {member.user.name} actualizado.')
     return redirect('org_detail', pk=pk)
+
+
+def _can_view_org_hours(membership):
+    return membership is not None and membership.role in ('owner', 'admin')
+
+
+@login_required
+@org_permission(_can_view_org_hours)
+def org_hours_overview(request, pk, org=None, org_membership=None):
+    from tasks.models import TimeLog
+
+    projects = Project.objects.filter(
+        organization=org, deleted_at__isnull=True
+    ).prefetch_related('time_logs')
+
+    # Per-project stats
+    per_project = []
+    total_budget = 0
+    total_consumed = 0
+    for project in projects:
+        consumed = project.time_logs.aggregate(total=Sum('hours'))['total'] or 0
+        budget = project.hour_budget
+        if budget:
+            total_budget += float(budget)
+        total_consumed += float(consumed)
+        remaining = float(budget) - float(consumed) if budget else None
+        pct = min(round(float(consumed) / float(budget) * 100), 100) if budget else 0
+        per_project.append({
+            'project': project,
+            'budget': budget,
+            'consumed': consumed,
+            'remaining': remaining,
+            'pct': pct,
+        })
+    per_project.sort(key=lambda r: float(r['consumed']), reverse=True)
+
+    # Per-member stats across all org projects
+    per_member = (
+        TimeLog.objects
+        .filter(project__organization=org, project__deleted_at__isnull=True)
+        .values('user__id', 'user__name', 'user__avatar')
+        .annotate(logged=Sum('hours'))
+        .order_by('-logged')
+    )
+
+    # Per-member per-project breakdown grouped for template
+    member_project_breakdown = (
+        TimeLog.objects
+        .filter(project__organization=org, project__deleted_at__isnull=True)
+        .values('user__id', 'user__name', 'project__id', 'project__name', 'project__key')
+        .annotate(logged=Sum('hours'))
+        .order_by('user__name', '-logged')
+    )
+    breakdown_by_user = {}
+    for row in member_project_breakdown:
+        uid = str(row['user__id'])
+        breakdown_by_user.setdefault(uid, []).append(row)
+
+    # Attach breakdown to per_member rows for template iteration
+    per_member_with_breakdown = []
+    for row in per_member:
+        uid = str(row['user__id'])
+        per_member_with_breakdown.append({
+            'uid': uid,
+            'name': row['user__name'],
+            'logged': row['logged'],
+            'projects': breakdown_by_user.get(uid, []),
+        })
+
+    return render(request, 'organizations/org_hours_overview.html', {
+        'org': org,
+        'membership': org_membership,
+        'per_project': per_project,
+        'per_member': per_member_with_breakdown,
+        'total_budget': total_budget or None,
+        'total_consumed': total_consumed,
+        'total_remaining': (total_budget - total_consumed) if total_budget else None,
+        'total_pct': min(round(total_consumed / total_budget * 100), 100) if total_budget else 0,
+    })
