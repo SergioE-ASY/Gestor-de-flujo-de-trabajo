@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django_ratelimit.decorators import ratelimit
+from django_ratelimit.core import get_usage
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from .forms import LoginForm, RegisterForm, ProfileForm
@@ -19,10 +20,29 @@ PREMIUM_THEMES = {'pink', 'red', 'blue', 'green'}
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+_LOGIN_RATE = '5/m'
+_LOGIN_GROUP = 'accounts.views.login_view'
+
+
 def _rate_limited_response(request, template, ctx=None):
     ctx = ctx or {}
     ctx['rate_limited'] = True
     return render(request, template, ctx, status=429)
+
+
+def _login_remaining(request):
+    """Return how many login attempts are left for this IP (0 when exhausted)."""
+    usage = get_usage(
+        request,
+        group=_LOGIN_GROUP,
+        key='ip',
+        rate=_LOGIN_RATE,
+        method='POST',
+        increment=False,
+    )
+    if usage is None:
+        return None
+    return max(0, usage['limit'] - usage['count'])
 
 
 def _get_confirmed_device(user):
@@ -39,7 +59,7 @@ def _qr_b64(device):
 
 # ── auth ─────────────────────────────────────────────────────────────────────
 
-@ratelimit(key='ip', rate='5/m', method='POST', block=False)
+@ratelimit(key='ip', rate=_LOGIN_RATE, method='POST', block=False)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -51,17 +71,17 @@ def login_view(request):
     if request.method == 'POST' and form.is_valid():
         user = form.get_user()
         if _get_confirmed_device(user):
-            # Partial auth: store user in session, redirect to 2FA step
             request.session['2fa_user_pk'] = str(user.pk)
             request.session['2fa_backend'] = user.backend
             return redirect('two_factor_verify')
-        # No 2FA — complete login immediately
         user.last_login_at = timezone.now()
         user.save(update_fields=['last_login_at'])
         login(request, user)
         return redirect(request.GET.get('next', 'dashboard'))
 
-    return render(request, 'accounts/login.html', {'form': form})
+    # After a failed POST, calculate remaining attempts to show in the form
+    remaining = _login_remaining(request) if request.method == 'POST' else None
+    return render(request, 'accounts/login.html', {'form': form, 'remaining': remaining})
 
 
 @ratelimit(key='ip', rate='5/m', method='POST', block=False)
