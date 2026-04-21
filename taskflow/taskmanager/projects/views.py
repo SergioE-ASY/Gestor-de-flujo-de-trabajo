@@ -43,6 +43,7 @@ def project_create(request):
                     organization=org, owner=request.user, key=key,
                     name=name, description=description, status=status,
                     priority=priority, start_date=start_date, due_date=due_date,
+                    hour_budget=request.POST.get('hour_budget') or None,
                 )
                 ProjectMember.objects.create(project=project, user=request.user, role='owner')
                 messages.success(request, f'Proyecto "{project.name}" creado.')
@@ -63,6 +64,7 @@ def project_detail(request, pk, project=None, membership=None):
     members = project.members.select_related('user').all()
     tags = project.tags.all()
     stats = project.get_task_stats()
+    hour_stats = project.get_hour_stats()
 
     from tasks.models import Task
     tasks_by_status = {}
@@ -80,6 +82,7 @@ def project_detail(request, pk, project=None, membership=None):
         'members': members,
         'tags': tags,
         'stats': stats,
+        'hour_stats': hour_stats,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
     })
@@ -95,6 +98,7 @@ def project_edit(request, pk, project=None, membership=None):
         project.priority = request.POST.get('priority', project.priority)
         project.start_date = request.POST.get('start_date') or None
         project.due_date = request.POST.get('due_date') or None
+        project.hour_budget = request.POST.get('hour_budget') or None
         project.save()
         messages.success(request, 'Proyecto actualizado.')
         return redirect('project_detail', pk=pk)

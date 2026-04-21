@@ -59,6 +59,26 @@
   {% endif %}
 </div>
 
+<!-- Bolsa de horas -->
+{% if hour_stats.budget %}
+<div style="margin-bottom:20px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <span style="font-size:0.85rem;font-weight:600;">Bolsa de horas</span>
+    <div style="display:flex;gap:16px;font-size:0.82rem;">
+      <span style="color:var(--text-muted);">Presupuesto: <strong style="color:var(--text);">{{ hour_stats.budget }}h</strong></span>
+      <span style="color:var(--text-muted);">Consumidas: <strong style="color:var(--text);">{{ hour_stats.consumed }}h</strong></span>
+      <span style="color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+        Restantes: <strong>{% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h (excedido){% endif %}</strong>
+      </span>
+    </div>
+  </div>
+  <div class="progress">
+    <div class="progress-bar {% if hour_stats.pct >= 100 %}danger{% elif hour_stats.pct >= 80 %}warning{% else %}success{% endif %}"
+      style="width:{{ hour_stats.pct }}%"></div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Tabs -->
 <div class="tabs">
   <a href="#board" class="tab active" onclick="showTab('board', this)">Tablero</a>
