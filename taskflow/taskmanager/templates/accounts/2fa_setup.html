@@ -1,0 +1,62 @@
+{% extends 'base/base.html' %}
+{% block title %}Activar autenticación en dos pasos{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}">Dashboard</a>
+  <span class="breadcrumb-sep">/</span>
+  <a href="{% url 'profile' %}">Perfil</a>
+  <span class="breadcrumb-sep">/</span>
+  Activar 2FA
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:40px auto 0;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">Autenticación en dos pasos</h2>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div style="font-weight:600;margin-bottom:8px;">Paso 1 — Escanea el código QR</div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
+      Abre tu app de autenticación (Google Authenticator, Authy, etc.) y escanea el código QR para añadir la cuenta.
+    </p>
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <div style="background:#fff;padding:12px;border-radius:10px;display:inline-block;">
+        <img src="data:image/png;base64,{{ qr_b64 }}" alt="Código QR 2FA" width="180" height="180">
+      </div>
+    </div>
+    <details style="font-size:0.8rem;color:var(--text-muted);">
+      <summary style="cursor:pointer;margin-bottom:6px;">No puedo escanear el QR — introducir clave manualmente</summary>
+      <code style="display:block;background:var(--bg3);padding:8px 12px;border-radius:6px;letter-spacing:0.1em;word-break:break-all;font-size:0.78rem;margin-top:6px;">{{ secret }}</code>
+    </details>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:8px;">Paso 2 — Confirma con un código</div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
+      Introduce el código de 6 dígitos que aparece en la app para confirmar la configuración.
+    </p>
+
+    {% if error %}
+    <div class="messages" style="margin-bottom:16px;">
+      <div class="message message-error">{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">Código de verificación</label>
+        <input type="text" name="token" class="form-control"
+          inputmode="numeric" autocomplete="one-time-code"
+          maxlength="6" placeholder="000000"
+          style="letter-spacing:0.25em;font-size:1.2rem;text-align:center;"
+          autofocus required>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <a href="{% url 'profile' %}" class="btn btn-secondary" style="flex:1;justify-content:center;">Cancelar</a>
+        <button type="submit" class="btn btn-primary" style="flex:2;justify-content:center;">
+          Activar 2FA
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
