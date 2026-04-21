@@ -391,14 +391,22 @@ select.form-control { cursor: pointer; }
 .table tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 /* ─── Kanban Board ─── */
-.board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding-bottom: 16px;
+}
 .board-col {
-  flex: 0 0 280px;
+  min-width: 0;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex; flex-direction: column;
   max-height: calc(100vh - 180px);
+}
+@media (max-width: 1200px) and (min-width: 769px) {
+  .board { grid-template-columns: repeat(2, 1fr); }
 }
 .board-col-header {
   padding: 12px 14px;
@@ -578,8 +586,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .form-row, .form-row-3, .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .board { flex-direction: column; }
-  .board-col { flex: none; }
+  .board { grid-template-columns: 1fr; }
+  .board-col { max-height: none; }
   #mobile-menu-btn, #mobile-actions-btn { display: inline-flex; }
   .topbar-actions {
     display: none;
