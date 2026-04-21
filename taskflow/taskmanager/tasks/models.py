@@ -52,7 +52,12 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='backlog')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     position = models.IntegerField(default=0)
-    estimated_min = models.IntegerField(null=True, blank=True, help_text='Estimación en minutos')
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    task_responsible = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='responsible_tasks',
+    )
+    hours_validated = models.BooleanField(default=False)
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,6 +82,11 @@ class Task(models.Model):
         elif self.status != 'done':
             self.completed_at = None
         super().save(*args, **kwargs)
+
+    def get_estimated_minutes(self):
+        if self.estimated_hours is None:
+            return None
+        return int(self.estimated_hours * 60)
 
     def get_total_logged_minutes(self):
         return sum(t.minutes for t in self.time_logs.all())

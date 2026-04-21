@@ -27,7 +27,8 @@ def task_create(request, project_pk, project=None, membership=None):
             status=request.POST.get('status', 'backlog'),
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
-            estimated_min=request.POST.get('estimated_min') or None,
+            estimated_hours=request.POST.get('estimated_hours') or None,
+            task_responsible_id=request.POST.get('task_responsible') or None,
             sprint_id=request.POST.get('sprint') or None,
             assignee_id=request.POST.get('assignee') or None,
             parent_task_id=request.POST.get('parent_task') or None,
@@ -96,7 +97,13 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.status = request.POST.get('status', task.status)
         task.priority = request.POST.get('priority', task.priority)
         task.due_date = request.POST.get('due_date') or None
-        task.estimated_min = request.POST.get('estimated_min') or None
+        new_hours = request.POST.get('estimated_hours') or None
+        if str(new_hours) != str(task.estimated_hours):
+            task.hours_validated = False
+        task.estimated_hours = new_hours
+        task.task_responsible_id = request.POST.get('task_responsible') or None
+        if request.user == task.task_responsible and request.POST.get('hours_validated'):
+            task.hours_validated = True
         task.sprint_id = request.POST.get('sprint') or None
         old_assignee = task.assignee
         task.assignee_id = request.POST.get('assignee') or None
