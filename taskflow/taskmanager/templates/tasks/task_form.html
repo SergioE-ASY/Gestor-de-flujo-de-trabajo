@@ -84,28 +84,15 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Responsable de horas</label>
-          <select name="task_responsible" class="form-control">
-            <option value="">Sin responsable</option>
-            {% for mem in members %}
-            <option value="{{ mem.user.pk }}" {% if task.task_responsible_id == mem.user.pk %}selected{% endif %}>{{ mem.user.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% if task.pk and task.task_responsible == request.user and task.estimated_hours %}
-        <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:4px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.88rem;">
-            <input type="checkbox" name="hours_validated" value="1" {% if task.hours_validated %}checked{% endif %}
-                   style="accent-color:var(--accent);width:16px;height:16px;">
-            Validar horas estimadas
-            {% if task.hours_validated %}
-            <span style="font-size:0.72rem;font-weight:600;color:var(--success);">✓ Validadas</span>
-            {% endif %}
-          </label>
-        </div>
-        {% endif %}
+      <div class="form-group">
+        <label class="form-label">Responsable de validación</label>
+        <select name="task_responsible" class="form-control">
+          <option value="">Sin responsable</option>
+          {% for mem in members %}
+          <option value="{{ mem.user.pk }}" {% if task.task_responsible_id == mem.user.pk %}selected{% endif %}>{{ mem.user.name }}</option>
+          {% endfor %}
+        </select>
+        <span class="text-muted text-sm">El responsable deberá aprobar la estimación de horas.</span>
       </div>
 
       {% if parent_tasks %}

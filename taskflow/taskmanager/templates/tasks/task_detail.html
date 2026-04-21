@@ -48,6 +48,46 @@
       {% endif %}
     </div>
 
+    <!-- Hours validation banner -->
+    {% if task.estimated_hours %}
+    <div style="padding:14px 16px;border-radius:var(--radius);border:1px solid {% if task.hours_validated %}var(--success){% else %}var(--warning){% endif %};background:{% if task.hours_validated %}rgba(34,197,94,0.07){% else %}rgba(245,158,11,0.07){% endif %};">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          {% if task.hours_validated %}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div>
+            <div style="font-size:0.88rem;font-weight:600;color:var(--success);">Estimación validada</div>
+            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h aprobadas por {{ task.task_responsible.name }}</div>
+          </div>
+          {% else %}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <div style="font-size:0.88rem;font-weight:600;color:var(--warning);">Estimación pendiente de validación</div>
+            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h · esperando aprobación de {% if task.task_responsible %}{{ task.task_responsible.name }}{% else %}un responsable{% endif %}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% if task.task_responsible == request.user and not task.hours_validated %}
+        <div style="display:flex;gap:8px;">
+          <form method="post" action="{% url 'task_validate_hours' project.pk task.pk %}">
+            {% csrf_token %}<input type="hidden" name="action" value="validate">
+            <button type="submit" class="btn btn-sm" style="background:var(--success);color:#fff;border:none;">Aprobar</button>
+          </form>
+          <form method="post" action="{% url 'task_validate_hours' project.pk task.pk %}">
+            {% csrf_token %}<input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-secondary btn-sm">Rechazar</button>
+          </form>
+        </div>
+        {% elif task.task_responsible == request.user and task.hours_validated %}
+        <form method="post" action="{% url 'task_validate_hours' project.pk task.pk %}">
+          {% csrf_token %}<input type="hidden" name="action" value="reject">
+          <button type="submit" class="btn btn-ghost btn-sm" style="font-size:0.78rem;color:var(--text-muted);">Revocar aprobación</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Quick status change -->
     <div class="card" style="padding:12px 16px;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -183,21 +223,14 @@
           <span class="{% if task.is_overdue %}text-danger{% endif %}">{{ task.due_date|date:"d M Y"|default:"Sin fecha" }}</span>
         </div>
         <div>
-          <div class="text-muted text-sm" style="margin-bottom:3px;">Estimación</div>
+          <div class="text-muted text-sm" style="margin-bottom:3px;">Horas estimadas</div>
           {% if task.estimated_hours %}
-          <span style="display:flex;align-items:center;gap:6px;">
-            {{ task.estimated_hours|floatformat:"-2" }}h
-            {% if task.hours_validated %}
-            <span style="font-size:0.7rem;font-weight:600;color:var(--success);">✓ Validadas</span>
-            {% else %}
-            <span style="font-size:0.7rem;color:var(--text-muted);">Pendiente validar</span>
-            {% endif %}
-          </span>
+          <span>{{ task.estimated_hours|floatformat:"-2" }}h</span>
           {% else %}<span class="text-muted">Sin estimación</span>{% endif %}
         </div>
         {% if task.task_responsible %}
         <div>
-          <div class="text-muted text-sm" style="margin-bottom:3px;">Responsable de horas</div>
+          <div class="text-muted text-sm" style="margin-bottom:3px;">Responsable</div>
           <div style="display:flex;align-items:center;gap:6px;">
             <div class="avatar avatar-sm">
               {% if task.task_responsible.avatar %}<img src="{{ task.task_responsible.avatar.url }}" alt="">{% else %}{{ task.task_responsible.get_initials }}{% endif %}
@@ -219,18 +252,8 @@
     <div class="card">
       <div class="card-header" style="margin-bottom:12px;">
         <span class="card-title">Tiempo registrado</span>
-        <span style="font-size:0.85rem;font-weight:600;color:var(--accent);">{{ total_logged_display }}</span>
+        <span style="font-size:0.85rem;font-weight:600;color:var(--accent);">{{ total_logged_hours|floatformat:"-2" }}h</span>
       </div>
-      {% with estimated_min=task.get_estimated_minutes %}
-      {% if estimated_min and estimated_min > 0 %}
-      <div style="margin-bottom:12px;">
-        <div class="progress">
-          <div class="progress-bar" style="width:{% widthratio total_logged estimated_min 100 %}%;"></div>
-        </div>
-        <div class="text-muted text-sm mt-1">{{ total_logged_display }} / {{ task.estimated_hours|floatformat:"-2" }}h estimadas</div>
-      </div>
-      {% endif %}
-      {% endwith %}
       {% if time_logs %}
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:160px;overflow-y:auto;">
         {% for log in time_logs %}
@@ -246,16 +269,18 @@
       {% endif %}
       <form method="post" action="{% url 'timelog_create' project.pk task.pk %}">
         {% csrf_token %}
-        <div class="form-group">
-          <input type="number" name="minutes" class="form-control" placeholder="Minutos trabajados" min="1" required>
+        <div class="form-row">
+          <div class="form-group">
+            <input type="number" name="hours" class="form-control" placeholder="Horas (ej: 1.5)" min="0.25" step="0.25" required>
+          </div>
+          <div class="form-group">
+            <input type="date" name="logged_date" class="form-control">
+          </div>
         </div>
         <div class="form-group">
           <input type="text" name="note" class="form-control" placeholder="Nota (opcional)">
         </div>
-        <div class="form-group">
-          <input type="date" name="logged_date" class="form-control">
-        </div>
-        <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">Registrar tiempo</button>
+        <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">Registrar horas</button>
       </form>
     </div>
   </div>

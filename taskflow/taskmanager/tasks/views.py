@@ -43,6 +43,12 @@ def task_create(request, project_pk, project=None, membership=None):
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
             )
+        if task.task_responsible and task.estimated_hours and task.task_responsible != request.user:
+            Notification.objects.create(
+                user=task.task_responsible, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
+            )
 
         messages.success(request, f'Tarea "{task.title}" creada.')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -70,14 +76,13 @@ def task_detail(request, project_pk, pk, project=None, membership=None):
     attachments = task.attachments.select_related('uploaded_by').all()
     time_logs = task.time_logs.select_related('user').all()
     subtasks = task.subtasks.select_related('assignee').all()
-    total_logged = task.get_total_logged_minutes()
+    total_logged_hours = task.get_total_logged_hours()
 
     return render(request, 'tasks/task_detail.html', {
         'project': project, 'task': task, 'membership': membership,
         'comments': comments, 'attachments': attachments,
         'time_logs': time_logs, 'subtasks': subtasks,
-        'total_logged': total_logged,
-        'total_logged_display': f'{total_logged // 60}h {total_logged % 60}m' if total_logged else '0m',
+        'total_logged_hours': total_logged_hours,
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'members': project.members.select_related('user'),
@@ -98,12 +103,13 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.priority = request.POST.get('priority', task.priority)
         task.due_date = request.POST.get('due_date') or None
         new_hours = request.POST.get('estimated_hours') or None
-        if str(new_hours) != str(task.estimated_hours):
+        hours_changed = str(new_hours) != str(task.estimated_hours)
+        if hours_changed:
             task.hours_validated = False
         task.estimated_hours = new_hours
+        old_responsible_id = task.task_responsible_id
         task.task_responsible_id = request.POST.get('task_responsible') or None
-        if request.user == task.task_responsible and request.POST.get('hours_validated'):
-            task.hours_validated = True
+        responsible_changed = task.task_responsible_id != old_responsible_id
         task.sprint_id = request.POST.get('sprint') or None
         old_assignee = task.assignee
         task.assignee_id = request.POST.get('assignee') or None
@@ -119,6 +125,17 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
                 user=task.assignee, task=task, project=project,
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
+            )
+        should_notify_responsible = (
+            task.task_responsible and task.estimated_hours
+            and task.task_responsible != request.user
+            and (responsible_changed or hours_changed)
+        )
+        if should_notify_responsible:
+            Notification.objects.create(
+                user=task.task_responsible, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
             )
 
         messages.success(request, 'Tarea actualizada.')
@@ -208,17 +225,62 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
 @require_POST
 @project_permission(can_log_time, pk_kwarg='project_pk')
 def timelog_create(request, project_pk, task_pk, project=None, membership=None):
+    from decimal import Decimal, InvalidOperation
     task = get_object_or_404(Task, pk=task_pk, project=project)
-    minutes = request.POST.get('minutes')
-    if minutes and int(minutes) > 0:
-        TimeLog.objects.create(
-            task=task, user=request.user,
-            minutes=int(minutes),
-            note=request.POST.get('note', ''),
-            logged_date=request.POST.get('logged_date') or timezone.now().date(),
-        )
-        messages.success(request, 'Tiempo registrado.')
+    hours_raw = request.POST.get('hours', '').strip()
+    try:
+        hours = Decimal(hours_raw)
+        if hours <= 0:
+            raise ValueError
+    except (InvalidOperation, ValueError):
+        messages.error(request, 'Introduce un número de horas válido.')
+        return redirect('task_detail', project_pk=project_pk, pk=task_pk)
+
+    TimeLog.objects.create(
+        task=task, project=project, user=request.user,
+        hours=hours,
+        note=request.POST.get('note', ''),
+        logged_date=request.POST.get('logged_date') or timezone.now().date(),
+    )
+    messages.success(request, f'{hours}h registradas correctamente.')
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
+
+
+@login_required
+@require_POST
+@require_project_member(pk_kwarg='project_pk')
+def task_validate_hours(request, project_pk, pk, project=None, membership=None):
+    task = get_object_or_404(Task, pk=pk, project=project)
+    if request.user != task.task_responsible:
+        messages.error(request, 'Solo el responsable de horas puede validar la estimación.')
+        return redirect('task_detail', project_pk=project_pk, pk=pk)
+    from notifications.models import Notification
+    action = request.POST.get('action')
+    notify_user = task.assignee if task.assignee and task.assignee != request.user else None
+
+    if action == 'validate':
+        task.hours_validated = True
+        task.save(update_fields=['hours_validated'])
+        messages.success(request, 'Estimación de horas validada.')
+        if notify_user:
+            Notification.objects.create(
+                user=notify_user, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} ha aprobado la estimación de {task.estimated_hours}h para: {task.title}',
+            )
+    elif action == 'reject':
+        hours_before = task.estimated_hours
+        task.hours_validated = False
+        task.estimated_hours = None
+        task.save(update_fields=['hours_validated', 'estimated_hours'])
+        messages.info(request, 'Estimación rechazada. El creador puede introducir una nueva.')
+        if notify_user:
+            Notification.objects.create(
+                user=notify_user, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} ha rechazado la estimación de {hours_before}h para: {task.title}. Por favor, introduce una nueva estimación.',
+            )
+    return redirect('task_detail', project_pk=project_pk, pk=pk)
 
 
 @login_required
