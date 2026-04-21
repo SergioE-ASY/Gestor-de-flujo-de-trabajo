@@ -1,30 +1,79 @@
-# 🎨 Estilos y Diseño del Frontend
+# Estilos y Diseño
 
-El diseño de la aplicación web está centrado en una estética moderna de alto contraste y dinamismo, apoyada en **Tailwind CSS v4** y un potente sistema de variables CSS nativas que facilitan un diseño unificado y la rápida transición entre un modo claro limpio y un modo oscuro con estética "neón" tecnológica.
+El sistema visual de e-asy se implementa completamente con **CSS custom properties** y el motor de plantillas de Django. No se usa ningún framework CSS externo.
 
-## 🌞 Esquema de Colores (Modo Claro)
+---
 
-El tema claro se caracteriza por espacios luminosos acompañados de acentos frescos en tonos turquesa/cian. Prioriza la legibilidad visual sin perder carácter:
-- **Fondos (Background):** Blanco puro (`#FFFFFF`) para tarjetas o entradas interactuables, combinando con superficies secundarias gris claro para separar zonas (`#F8FAFC`).
-- **Acento Primario:** Turquesa enérgico (`#00BCCD`) con brillos suaves para interacciones y botones.
-- **Acento Secundario:** Gris pizarra metálico (`#94A3B8`) para contornos, estados menos prioritarios y tipografías secundarias.
-- **Tipografía y Contenido:** Textos principales de fuerte contraste cercano al negro (`#020617` y `#475569`), que descansan visualmente sobre elementos brillantes.
+## Sistema de Temas
 
-## 🌙 Esquema de Colores (Modo Oscuro)
+Los temas se controlan con dos atributos en el elemento `<html>`:
 
-El modo oscuro abandona la neutralidad para adoptar un estilo llamativo, contrastado y tecnológico ("cyber/neón"). Utiliza fondos extremadamente negros para maximizar la emisión de luz y resplandor de los colores principales:
-- **Fondos Radiales:** Muy oscuros y profundos (`#000E12` a `#0A0F14`) de forma que no existan interferencias ni grises dominantes a diferencia de otros 'Dark Modes' convencionales.
-- **Acento Primario Neón:** Cian y añil electrizantes (`#00E5FF`). El color se intensifica durante el "Hover" (p.ej a `#66FFFF`) aportando una sensación de brillo activo ante las acciones del usuario.
-- **Gradientes Eléctricos:** Una mezcla drástica entre un cian brillante hacia reflejos profundos azulados (`#005C66`), logrando el salto tonal que se espera de una interfaz tecnológica de última generación.
-- **Estados Semánticos:** Los estados de error, advertencia o éxito (Rojo, Amarillo, Verde) también se oscurecen al ser aplicados en backgrounds opacos al `10%`, favoreciendo el realce de los caracteres tipográficos como luz de láser.
+| Atributo | Valores | Descripción |
+|---|---|---|
+| `data-theme` | `dark` (por defecto), `light` | Modo base de la interfaz |
+| `data-color` | `default`, `pink`, `red`, `blue`, `green` | Color de acento |
 
-## ⚙️ Integración con Tailwind CSS v4
+El valor inicial se inyecta en el `<head>` de `base.html` antes de que se pinte nada, evitando destellos (`FOUC`):
 
-La columna vertebral de nuestra arquitectura de estilos está basada en las últimas adaptaciones de CSS y utilitarios, orquestadas desde `Frontend/src/index.css`:
+```html
+<script>(function(){
+  document.documentElement.setAttribute('data-theme', '{{ user.base_theme }}');
+  document.documentElement.setAttribute('data-color', '{{ user.color_theme }}');
+})();</script>
+```
 
-1. **Variables y Raíz:** Modificando de manera global en pseudo-clases como `:root` y `.dark` las propiedades nativas (`--background`, `--foreground`, etc.).
-2. **Directiva `@theme inline`:** Alimentamos la configuración sin necesidad de depender del antiguo `tailwind.config.ts`, instruyendo al compilador de Tailwind los nuevos mapeos de color de forma inmediata y explícita.
-3. **Desarrollo Ágil:** Esta configuración permite un despliegue muy rápido mediante la inyección de clases de semántica universal; podemos estilizar interfaces usando clases como `bg-background`, `bg-accent-primary`, o `text-sidebar-active-text`.
+Los cambios posteriores se aplican mediante AJAX (sin recarga) y se persisten en el modelo `User`.
+
+---
+
+## Variables CSS
+
+Definidas en `static/css/app.css`:
+
+```css
+:root {                        /* base oscura */
+  --bg: #0a0f14;
+  --surface: #111820;
+  --border: #1e2d3d;
+  --text: #e2e8f0;
+  --accent: #00e5ff;
+}
+
+[data-theme="light"] {         /* base clara */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --accent: #00bccd;
+}
+
+[data-color="pink"]  { --accent: #ec4899; }
+[data-color="red"]   { --accent: #ef4444; }
+[data-color="blue"]  { --accent: #3b82f6; }
+[data-color="green"] { --accent: #22c55e; }
+
+/* Colores de acento adaptados al modo claro */
+[data-theme="light"][data-color="pink"]  { --accent: #db2777; }
+[data-theme="light"][data-color="red"]   { --accent: #dc2626; }
+[data-theme="light"][data-color="blue"]  { --accent: #2563eb; }
+[data-theme="light"][data-color="green"] { --accent: #16a34a; }
+```
+
+---
+
+## Colores Premium
+
+Los colores `pink`, `red`, `blue` y `green` están bloqueados para usuarios con `is_premium = False`. El intento de activarlos devuelve HTTP 403. En la interfaz aparecen con un icono de candado y se abre un modal de mejora de plan.
+
+---
+
+## Modo oscuro (por defecto)
+
+Estética cyber/neón con fondos muy oscuros (`#0a0f14`) y acentos brillantes. El acento por defecto es cian eléctrico (`#00e5ff`).
+
+## Modo claro
+
+Fondos blancos y grises claros con el mismo acento adaptado a menor luminosidad para mantener contraste (`#00bccd` por defecto).
 
 ---
 

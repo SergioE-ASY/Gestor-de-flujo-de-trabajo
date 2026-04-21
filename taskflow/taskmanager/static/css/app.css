@@ -391,14 +391,22 @@ select.form-control { cursor: pointer; }
 .table tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 /* ─── Kanban Board ─── */
-.board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding-bottom: 16px;
+}
 .board-col {
-  flex: 0 0 280px;
+  min-width: 0;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex; flex-direction: column;
   max-height: calc(100vh - 180px);
+}
+@media (max-width: 1200px) and (min-width: 769px) {
+  .board { grid-template-columns: repeat(2, 1fr); }
 }
 .board-col-header {
   padding: 12px 14px;

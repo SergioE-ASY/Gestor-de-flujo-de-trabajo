@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
@@ -15,7 +16,63 @@ from .serializers import (
     UserSerializer, ProjectSerializer, TaskSerializer, CommentSerializer,
 )
 
+_RATELIMITED_RESPONSE = Response(
+    {'error': 'Demasiadas peticiones. Inténtalo más tarde.'},
+    status=status.HTTP_429_TOO_MANY_REQUESTS,
+)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED_RESPONSE
+        return super().post(request, *args, **kwargs)
+
+
+@method_decorator(ratelimit(key='ip', rate='20/m', method='POST', block=False), name='post')
+class RateLimitedTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED_RESPONSE
+        return super().post(request, *args, **kwargs)
+
 User = get_user_model()
+
+_RATELIMITED = Response(
+    {'error': 'Demasiadas peticiones. Inténtalo más tarde.'},
+    status=status.HTTP_429_TOO_MANY_REQUESTS,
+)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.user
+        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+        if device:
+            totp_token = str(request.data.get('totp_token', '')).strip()
+            if not totp_token or not device.verify_token(totp_token):
+                return Response(
+                    {'error': 'Código 2FA requerido o inválido.', 'requires_2fa': True},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+
+@method_decorator(ratelimit(key='ip', rate='20/m', method='POST', block=False), name='post')
+class RateLimitedTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            return _RATELIMITED
+        return super().post(request, *args, **kwargs)
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False), name='post')
