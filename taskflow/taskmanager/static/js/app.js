@@ -62,12 +62,34 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ─── Inactividad: cerrar sesión tras 30 min sin actividad ───
+const SESSION_TIMEOUT_MS = 30 * 60 *1000; // 30 minutos
+let _inactivityTimer = null;
+
+function resetInactivityTimer() {
+  if (_inactivityTimer) clearTimeout(_inactivityTimer);
+  _inactivityTimer = setTimeout(() => {
+    window.location.href = '/logout/';
+  }, SESSION_TIMEOUT_MS);
+}
+
+// Reiniciar timer con interacción REAL del usuario
+['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+  document.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
+resetInactivityTimer();
+
 // ─── Notification counter ───
 async function fetchNotifCount() {
   const el = document.getElementById('notif-count');
   if (!el) return;
   try {
     const r = await fetch('/notifications/count/');
+    if (r.status === 401) {
+      // Sesión expirada en el servidor
+      window.location.href = '/login/';
+      return;
+    }
     const data = await r.json();
     el.textContent = data.count || '';
     el.style.display = data.count > 0 ? 'flex' : 'none';
