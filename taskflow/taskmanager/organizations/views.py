@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from .models import Organization, OrganizationUser
-from .permissions import can_manage_members
+from .permissions import can_manage_members, can_assign_role, is_last_owner
 from shared.decorators import require_org_member, org_permission
 from projects.models import Project
 
@@ -95,6 +95,9 @@ def org_invite(request, pk, org=None, org_membership=None):
 def org_member_remove(request, pk, member_pk, org=None, org_membership=None):
     member = get_object_or_404(OrganizationUser, pk=member_pk, organization=org)
     if request.method == 'POST' and member.user != request.user:
+        if member.role == 'owner' and is_last_owner(org):
+            messages.error(request, 'No puedes eliminar al único propietario de la organización.')
+            return redirect('org_detail', pk=pk)
         name = member.user.name
         member.delete()
         messages.success(request, f'{name} eliminado de la organización.')
@@ -108,6 +111,9 @@ def org_member_update(request, pk, member_pk, org=None, org_membership=None):
     if request.method == 'POST':
         role = request.POST.get('role')
         if role in ('member', 'admin', 'owner'):
+            if not can_assign_role(org_membership, role):
+                messages.error(request, 'Solo el propietario puede asignar el rol de propietario.')
+                return redirect('org_detail', pk=pk)
             member.role = role
             member.save()
             messages.success(request, f'Rol de {member.user.name} actualizado.')

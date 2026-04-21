@@ -8,6 +8,7 @@ from .models import Project, ProjectMember, Sprint
 from .permissions import (
     can_edit_project, can_delete_project,
     can_manage_members, can_manage_sprints,
+    can_manage_tags,
 )
 from shared.decorators import require_project_member, project_permission
 from organizations.models import Organization, OrganizationUser
@@ -33,7 +34,9 @@ def project_create(request):
             messages.error(request, 'Organización, nombre y clave son obligatorios.')
         else:
             org = get_object_or_404(Organization, pk=org_id)
-            if Project.objects.filter(organization=org, key=key).exists():
+            if not OrganizationUser.objects.filter(organization=org, user=request.user).exists():
+                messages.error(request, 'No eres miembro de esa organización.')
+            elif Project.objects.filter(organization=org, key=key).exists():
                 messages.error(request, f'La clave "{key}" ya existe en esta organización.')
             else:
                 project = Project.objects.create(
@@ -159,7 +162,7 @@ def project_member_remove(request, pk, member_pk, project=None, membership=None)
 
 
 @login_required
-@require_project_member()
+@project_permission(can_manage_sprints)
 def sprint_create(request, pk, project=None, membership=None):
     if request.method == 'POST':
         Sprint.objects.create(
@@ -175,7 +178,7 @@ def sprint_create(request, pk, project=None, membership=None):
 
 
 @login_required
-@require_project_member()
+@project_permission(can_manage_sprints)
 def sprint_update(request, pk, sprint_pk, project=None, membership=None):
     sprint = get_object_or_404(Sprint, pk=sprint_pk, project=project)
     if request.method == 'POST':
