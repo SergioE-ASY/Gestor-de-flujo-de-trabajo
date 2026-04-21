@@ -67,6 +67,9 @@ def project_detail(request, pk, project=None, membership=None):
     hour_stats = project.get_hour_stats()
 
     from tasks.models import Task
+    from tasks.models import TimeLog
+    from django.db.models import Sum
+
     tasks_by_status = {}
     for status_key, status_label in Task.STATUS_CHOICES:
         tasks_by_status[status_key] = {
@@ -74,6 +77,22 @@ def project_detail(request, pk, project=None, membership=None):
             'tasks': project.tasks.filter(status=status_key, parent_task__isnull=True)
                           .select_related('assignee', 'sprint').prefetch_related('tags').order_by('position'),
         }
+
+    hours_by_task = (
+        TimeLog.objects
+        .filter(project=project)
+        .values('task__id', 'task__title', 'task__project_sequence', 'task__status', 'task__estimated_hours')
+        .annotate(logged=Sum('hours'))
+        .order_by('-logged')
+    )
+
+    hours_by_member = (
+        TimeLog.objects
+        .filter(project=project)
+        .values('user__id', 'user__name', 'user__avatar')
+        .annotate(logged=Sum('hours'))
+        .order_by('-logged')
+    )
 
     return render(request, 'projects/project_detail.html', {
         'project': project,
@@ -83,6 +102,8 @@ def project_detail(request, pk, project=None, membership=None):
         'tags': tags,
         'stats': stats,
         'hour_stats': hour_stats,
+        'hours_by_task': hours_by_task,
+        'hours_by_member': hours_by_member,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
     })

@@ -84,6 +84,7 @@
   <a href="#board" class="tab active" onclick="showTab('board', this)">Tablero</a>
   <a href="#list" class="tab" onclick="showTab('list', this)">Lista</a>
   <a href="#sprints" class="tab" onclick="showTab('sprints', this)">Sprints</a>
+  <a href="#hours" class="tab" onclick="showTab('hours', this)">Horas</a>
   <a href="#members" class="tab" onclick="showTab('members', this)">Miembros</a>
   <a href="#tags" class="tab" onclick="showTab('tags', this)">Etiquetas</a>
 </div>
@@ -234,6 +235,132 @@
   {% else %}
   <div class="empty-state"><div class="empty-icon">🏃</div><h3>Sin sprints</h3><p>Crea sprints para organizar el trabajo del equipo.</p></div>
   {% endif %}
+</div>
+
+<!-- Hours Tab -->
+<div id="tab-hours" style="display:none;">
+
+  <!-- Resumen global -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title" style="margin-bottom:16px;">Resumen de horas</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Presupuesto</div>
+        <div style="font-size:1.4rem;font-weight:700;">{% if hour_stats.budget %}{{ hour_stats.budget }}h{% else %}—{% endif %}</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Consumidas</div>
+        <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.consumed }}h</div>
+      </div>
+      {% if hour_stats.budget %}
+      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Restantes</div>
+        <div style="font-size:1.4rem;font-weight:700;color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+          {% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h{% endif %}
+        </div>
+      </div>
+      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Uso</div>
+        <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.pct }}%</div>
+      </div>
+      {% endif %}
+    </div>
+    {% if hour_stats.budget %}
+    <div class="progress" style="height:8px;">
+      <div class="progress-bar {% if hour_stats.pct >= 100 %}danger{% elif hour_stats.pct >= 80 %}warning{% else %}success{% endif %}"
+        style="width:{{ hour_stats.pct }}%"></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Desglose por miembro -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title" style="margin-bottom:14px;">Por miembro</div>
+    {% if hours_by_member %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Miembro</th>
+          <th style="text-align:right;">Horas registradas</th>
+          {% if hour_stats.budget %}<th style="width:200px;">Proporción</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in hours_by_member %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="avatar avatar-sm">{{ row.user__name|slice:":1"|upper }}</div>
+              {{ row.user__name }}
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
+          {% if hour_stats.budget %}
+          <td>
+            {% with pct=row.logged|floatformat:0 %}
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar" style="width:{% widthratio row.logged hour_stats.consumed 100 %}%"></div>
+            </div>
+            {% endwith %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay horas registradas.</p>
+    {% endif %}
+  </div>
+
+  <!-- Desglose por tarea -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px;">Por tarea</div>
+    {% if hours_by_task %}
+    <div style="overflow-x:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tarea</th>
+            <th style="text-align:right;">Estimadas</th>
+            <th style="text-align:right;">Registradas</th>
+            <th style="width:180px;">Progreso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in hours_by_task %}
+          <tr>
+            <td>
+              <a href="{% url 'task_detail' project.pk row.task__id %}" style="color:var(--text);">
+                <span style="color:var(--text-muted);font-size:0.8rem;">{{ project.key }}-{{ row.task__project_sequence }}</span>
+                {{ row.task__title }}
+              </a>
+            </td>
+            <td style="text-align:right;color:var(--text-muted);">
+              {% if row.task__estimated_hours %}{{ row.task__estimated_hours }}h{% else %}—{% endif %}
+            </td>
+            <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
+            <td>
+              {% if row.task__estimated_hours %}
+                {% with pct=row.logged %}
+                <div class="progress" style="height:6px;">
+                  <div class="progress-bar {% if row.logged > row.task__estimated_hours %}danger{% else %}success{% endif %}"
+                    style="width:{% widthratio row.logged row.task__estimated_hours 100 %}%{% if row.logged > row.task__estimated_hours %};max-width:100%{% endif %}"></div>
+                </div>
+                {% endwith %}
+              {% else %}
+              <span style="font-size:0.78rem;color:var(--text-muted);">Sin estimación</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay horas registradas en tareas.</p>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Members Tab -->
