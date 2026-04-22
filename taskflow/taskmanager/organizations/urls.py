@@ -12,4 +12,5 @@ urlpatterns = [
     path('organizations/<uuid:pk>/members/<uuid:member_pk>/remove/', views.org_member_remove, name='org_member_remove'),
     path('organizations/<uuid:pk>/hours/', views.org_hours_overview, name='org_hours_overview'),
     path('organizations/<uuid:pk>/hours/export/', views.org_hours_export, name='org_hours_export'),
+    path('organizations/<uuid:pk>/hours/monthly/', views.org_hours_monthly, name='org_hours_monthly'),
 ]

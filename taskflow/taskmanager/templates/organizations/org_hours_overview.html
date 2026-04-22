@@ -13,7 +13,10 @@ Resumen de horas
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
     <h2 style="font-size:1.15rem;font-weight:700;margin:0;">Resumen de horas — {{ org.name }}</h2>
-    <a href="{% url 'org_detail' org.pk %}" class="btn btn-secondary btn-sm">← Volver</a>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'org_hours_monthly' org.pk %}" class="btn btn-ghost btn-sm">Resumen mensual</a>
+      <a href="{% url 'org_detail' org.pk %}" class="btn btn-secondary btn-sm">← Volver</a>
+    </div>
   </div>
 
   <!-- Exportar -->

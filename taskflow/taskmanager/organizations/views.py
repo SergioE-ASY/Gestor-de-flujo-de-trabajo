@@ -319,3 +319,79 @@ def org_hours_export(request, pk, org=None, org_membership=None):
     for log in qs:
         writer.writerow(row_data(log))
     return response
+
+
+@login_required
+@org_permission(_can_view_org_hours)
+def org_hours_monthly(request, pk, org=None, org_membership=None):
+    from tasks.models import TimeLog
+    from django.db.models.functions import TruncMonth
+    from django.db.models import Sum
+    from datetime import date
+
+    current_year = date.today().year
+    year = int(request.GET.get('year', current_year))
+
+    rows = (
+        TimeLog.objects
+        .filter(
+            project__organization=org,
+            project__deleted_at__isnull=True,
+            logged_date__year=year,
+        )
+        .annotate(month=TruncMonth('logged_date'))
+        .values('user__id', 'user__name', 'month')
+        .annotate(logged=Sum('hours'))
+        .order_by('user__name', 'month')
+    )
+
+    # Build pivot: {user_id: {month_num: hours}}
+    MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+                   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+    users_map = {}   # uid -> {name, months: {1..12: hours}, total}
+    active_months = set()
+
+    for row in rows:
+        uid = str(row['user__id'])
+        month_num = row['month'].month
+        active_months.add(month_num)
+        if uid not in users_map:
+            users_map[uid] = {'name': row['user__name'], 'months': {}, 'total': 0}
+        users_map[uid]['months'][month_num] = float(row['logged'])
+        users_map[uid]['total'] += float(row['logged'])
+
+    months = sorted(active_months)
+    month_labels = [MONTH_NAMES[m - 1] for m in months]
+
+    # Month totals
+    month_totals = {m: 0.0 for m in months}
+    for u in users_map.values():
+        for m, h in u['months'].items():
+            month_totals[m] += h
+
+    # Build flat list for template
+    pivot_rows = [
+        {
+            'name': u['name'],
+            'cells': [u['months'].get(m, None) for m in months],
+            'total': u['total'],
+        }
+        for u in sorted(users_map.values(), key=lambda x: x['name'])
+    ]
+
+    grand_total = sum(u['total'] for u in users_map.values())
+
+    return render(request, 'organizations/org_hours_monthly.html', {
+        'org': org,
+        'membership': org_membership,
+        'year': year,
+        'prev_year': year - 1,
+        'next_year': year + 1,
+        'months': months,
+        'month_labels': month_labels,
+        'month_totals': [month_totals[m] for m in months],
+        'pivot_rows': pivot_rows,
+        'grand_total': grand_total,
+        'has_data': bool(pivot_rows),
+    })
