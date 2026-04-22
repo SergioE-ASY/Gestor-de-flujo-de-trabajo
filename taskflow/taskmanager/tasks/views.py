@@ -241,7 +241,7 @@ def timelog_create(request, project_pk, task_pk, project=None, membership=None):
     minutes = _parse_hm(request.POST, 'log_h', 'log_m')
     if minutes and minutes > 0:
         TimeLog.objects.create(
-            task=task, user=request.user,
+            task=task, project=project, user=request.user,
             minutes=minutes,
             note=request.POST.get('note', ''),
             logged_date=request.POST.get('logged_date') or timezone.now().date(),

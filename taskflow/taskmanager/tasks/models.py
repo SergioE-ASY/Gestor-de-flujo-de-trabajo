@@ -133,6 +133,7 @@ class Attachment(models.Model):
 class TimeLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='time_logs')
+    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='time_logs')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='time_logs')
     minutes = models.PositiveIntegerField()
     note = models.TextField(blank=True)
