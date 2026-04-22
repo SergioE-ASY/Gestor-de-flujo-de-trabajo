@@ -43,7 +43,6 @@ def project_create(request):
                     organization=org, owner=request.user, key=key,
                     name=name, description=description, status=status,
                     priority=priority, start_date=start_date, due_date=due_date,
-                    hour_budget=request.POST.get('hour_budget') or None,
                 )
                 ProjectMember.objects.create(project=project, user=request.user, role='owner')
                 messages.success(request, f'Proyecto "{project.name}" creado.')
@@ -64,12 +63,8 @@ def project_detail(request, pk, project=None, membership=None):
     members = project.members.select_related('user').all()
     tags = project.tags.all()
     stats = project.get_task_stats()
-    hour_stats = project.get_hour_stats()
 
     from tasks.models import Task
-    from tasks.models import TimeLog
-    from django.db.models import Sum
-
     tasks_by_status = {}
     for status_key, status_label in Task.STATUS_CHOICES:
         tasks_by_status[status_key] = {
@@ -78,22 +73,6 @@ def project_detail(request, pk, project=None, membership=None):
                           .select_related('assignee', 'sprint').prefetch_related('tags').order_by('position'),
         }
 
-    hours_by_task = (
-        TimeLog.objects
-        .filter(project=project)
-        .values('task__id', 'task__title', 'task__project_sequence', 'task__status', 'task__estimated_hours')
-        .annotate(logged=Sum('hours'))
-        .order_by('-logged')
-    )
-
-    hours_by_member = (
-        TimeLog.objects
-        .filter(project=project)
-        .values('user__id', 'user__name', 'user__avatar')
-        .annotate(logged=Sum('hours'))
-        .order_by('-logged')
-    )
-
     return render(request, 'projects/project_detail.html', {
         'project': project,
         'membership': membership,
@@ -101,9 +80,6 @@ def project_detail(request, pk, project=None, membership=None):
         'members': members,
         'tags': tags,
         'stats': stats,
-        'hour_stats': hour_stats,
-        'hours_by_task': hours_by_task,
-        'hours_by_member': hours_by_member,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
     })
@@ -119,7 +95,6 @@ def project_edit(request, pk, project=None, membership=None):
         project.priority = request.POST.get('priority', project.priority)
         project.start_date = request.POST.get('start_date') or None
         project.due_date = request.POST.get('due_date') or None
-        project.hour_budget = request.POST.get('hour_budget') or None
         project.save()
         messages.success(request, 'Proyecto actualizado.')
         return redirect('project_detail', pk=pk)
@@ -184,44 +159,6 @@ def project_member_remove(request, pk, member_pk, project=None, membership=None)
         member.delete()
         messages.success(request, f'{name} eliminado del proyecto.')
     return redirect('project_detail', pk=pk)
-
-
-@login_required
-@project_permission(can_manage_members, pk_kwarg='pk')
-def member_hour_history(request, pk, user_pk, project=None, membership=None):
-    from tasks.models import TimeLog
-    from django.db.models import Sum
-
-    target_user = get_object_or_404(User, pk=user_pk)
-    if not ProjectMember.objects.filter(project=project, user=target_user).exists():
-        messages.error(request, 'Este usuario no es miembro del proyecto.')
-        return redirect('project_detail', pk=pk)
-
-    logs = (
-        TimeLog.objects
-        .filter(project=project, user=target_user)
-        .select_related('task')
-        .order_by('-logged_date', '-task__project_sequence')
-    )
-
-    by_task = (
-        TimeLog.objects
-        .filter(project=project, user=target_user)
-        .values('task__id', 'task__title', 'task__project_sequence', 'task__status')
-        .annotate(total=Sum('hours'))
-        .order_by('-total')
-    )
-
-    total_hours = logs.aggregate(total=Sum('hours'))['total'] or 0
-
-    return render(request, 'projects/member_hour_history.html', {
-        'project': project,
-        'membership': membership,
-        'target_user': target_user,
-        'logs': logs,
-        'by_task': by_task,
-        'total_hours': total_hours,
-    })
 
 
 @login_required

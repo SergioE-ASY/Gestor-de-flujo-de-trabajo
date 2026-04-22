@@ -52,12 +52,7 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='backlog')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     position = models.IntegerField(default=0)
-    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    task_responsible = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='responsible_tasks',
-    )
-    hours_validated = models.BooleanField(default=False)
+    estimated_min = models.IntegerField(null=True, blank=True, help_text='Estimación en minutos')
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -83,10 +78,8 @@ class Task(models.Model):
             self.completed_at = None
         super().save(*args, **kwargs)
 
-    def get_total_logged_hours(self):
-        from django.db.models import Sum
-        result = self.time_logs.aggregate(total=Sum('hours'))['total']
-        return result or 0
+    def get_total_logged_minutes(self):
+        return sum(t.minutes for t in self.time_logs.all())
 
     def is_overdue(self):
         if self.due_date and self.status != 'done':
@@ -139,9 +132,8 @@ class Attachment(models.Model):
 class TimeLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='time_logs')
-    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='time_logs')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='time_logs')
-    hours = models.DecimalField(max_digits=6, decimal_places=2)
+    minutes = models.PositiveIntegerField()
     note = models.TextField(blank=True)
     logged_date = models.DateField(default=timezone.now)
 
@@ -150,10 +142,10 @@ class TimeLog(models.Model):
         ordering = ['-logged_date']
 
     def __str__(self):
-        return f'{self.hours}h — {self.task}'
+        return f'{self.minutes} min — {self.task}'
 
     @property
     def hours_display(self):
-        h = int(self.hours)
-        m = round((self.hours - h) * 60)
-        return f'{h}h {m}m' if m else f'{h}h'
+        h = self.minutes // 60
+        m = self.minutes % 60
+        return f'{h}h {m}m' if h else f'{m}m'
