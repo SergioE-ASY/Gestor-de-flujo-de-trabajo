@@ -191,3 +191,32 @@ document.addEventListener('click', e => {
     }
   }
 });
+
+// ─── EasyMDE Initialization ───
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('textarea.markdown-editor').forEach(textarea => {
+    new EasyMDE({
+      element: textarea,
+      forceSync: true,
+      spellChecker: false,
+      status: false,
+      minHeight: "120px",
+      toolbar: [
+        "bold", "italic", "heading", "|", 
+        "quote", "unordered-list", "ordered-list", "|", 
+        "link", "image", "code", "|", 
+        "preview", "side-by-side", "fullscreen", "|", 
+        "guide"
+      ]
+    });
+  });
+
+  // Parse markdown for elements with class 'markdown-content'
+  if (typeof marked !== 'undefined') {
+    document.querySelectorAll('.markdown-content').forEach(el => {
+      // Get the raw text content (assuming it was escaped or safely injected)
+      const rawText = el.textContent;
+      el.innerHTML = marked.parse(rawText);
+    });
+  }
+});

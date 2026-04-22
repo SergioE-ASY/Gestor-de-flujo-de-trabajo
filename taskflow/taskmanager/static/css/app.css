@@ -612,3 +612,47 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   #sidebar-orgs { order: 2; }
   .sidebar-bottom { order: 3; }
 }
+
+/* ─── EasyMDE Customization ─── */
+.EasyMDEContainer .CodeMirror {
+  background: var(--bg3);
+  color: var(--text);
+  border-color: var(--border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.875rem;
+}
+.EasyMDEContainer .editor-toolbar {
+  background: var(--bg2);
+  border-color: var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  opacity: 1;
+}
+.EasyMDEContainer .editor-toolbar i.separator { border-left-color: var(--border); border-right-color: transparent; }
+.EasyMDEContainer .editor-toolbar > button {
+  color: var(--text-muted);
+}
+.EasyMDEContainer .editor-toolbar > button:hover, .EasyMDEContainer .editor-toolbar > button.active {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: var(--accent);
+}
+.EasyMDEContainer .editor-toolbar > button:focus {
+  border-color: var(--accent);
+}
+.EasyMDEContainer .editor-statusbar { color: var(--text-muted); }
+/* Customizing fullscreen */
+.editor-toolbar.fullscreen, .CodeMirror-fullscreen {
+  background: var(--bg) !important;
+  z-index: 1000 !important;
+}
+.editor-preview {
+  background: var(--bg3);
+  color: var(--text);
+}
+.editor-preview pre {
+  background: var(--bg2);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}

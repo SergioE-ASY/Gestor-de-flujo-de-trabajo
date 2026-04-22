@@ -42,7 +42,7 @@
         {% if task.completed_at %} · Completada {{ task.completed_at|date:"d M Y" }}{% endif %}
       </div>
       {% if task.description %}
-      <div style="font-size:0.9rem;line-height:1.7;color:var(--text);white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);">{{ task.description }}</div>
+      <div style="font-size:0.9rem;line-height:1.7;color:var(--text);padding-top:12px;border-top:1px solid var(--border);" class="markdown-content">{{ task.description }}</div>
       {% else %}
       <p class="text-muted text-sm" style="padding-top:12px;border-top:1px solid var(--border);">Sin descripción.</p>
       {% endif %}
@@ -151,7 +151,7 @@
               </form>
               {% endif %}
             </div>
-            <div class="comment-content">{{ comment.content }}</div>
+            <div class="comment-content markdown-content">{{ comment.content }}</div>
           </div>
         </div>
         {% endfor %}
@@ -164,7 +164,7 @@
             {% if request.user.avatar %}<img src="{{ request.user.avatar.url }}" alt="">{% else %}{{ request.user.get_initials }}{% endif %}
           </div>
           <div style="flex:1;">
-            <textarea name="content" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+            <textarea name="content" class="form-control markdown-editor" rows="3" placeholder="Escribe un comentario..."></textarea>
             <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px;">Comentar</button>
           </div>
         </div>

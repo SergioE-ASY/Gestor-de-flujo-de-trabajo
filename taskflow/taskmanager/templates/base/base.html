@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
   {% block extra_css %}{% endblock %}
   <script>(function(){var b='{% if user.is_authenticated %}{{ user.base_theme }}{% else %}'+(localStorage.getItem('base-theme')||'dark')+'{% endif %}';var c='{% if user.is_authenticated %}{{ user.color_theme }}{% else %}'+(localStorage.getItem('color-theme')||'default')+'{% endif %}';document.documentElement.setAttribute('data-theme',b);document.documentElement.setAttribute('data-color',c);})();</script>
 </head>
@@ -162,6 +163,8 @@
 {% endif %}
 
 <script src="{% static 'js/app.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
