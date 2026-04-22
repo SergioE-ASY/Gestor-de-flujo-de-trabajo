@@ -304,3 +304,75 @@ if (keyInput) keyInput.addEventListener('input', () => keyInput.value = keyInput
       .replace(/"/g, '&quot;');
   }
 })();
+
+// ─── Kanban card navigation (skip when inline-editing) ───
+function handleCardClick(e, card) {
+  if (e.target.closest('.task-card-title')) return; // title handles its own clicks
+  window.location = card.dataset.detailUrl;
+}
+
+// ─── Inline title edit on double-click ───
+function startInlineTitleEdit(e, el, saveUrl) {
+  e.stopPropagation();
+  if (el.contentEditable === 'true') return;
+
+  const card = el.closest('.task-card');
+  const original = el.textContent.trim();
+  let done = false;
+
+  el.contentEditable = 'true';
+  if (card) card.draggable = false;
+  el.focus();
+
+  // Select all text
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  function finish(newTitle) {
+    if (done) return;
+    done = true;
+    el.contentEditable = 'false';
+    if (card) card.draggable = true;
+
+    if (!newTitle || newTitle === original) {
+      el.textContent = original;
+      return;
+    }
+
+    el.textContent = newTitle; // optimistic
+    const fd = new FormData();
+    fd.append('title', newTitle);
+    fetch(saveUrl, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf() },
+      body: fd,
+    })
+      .then(r => r.json())
+      .then(data => { el.textContent = data.ok ? data.title : original; })
+      .catch(() => { el.textContent = original; });
+  }
+
+  function cancel() {
+    if (done) return;
+    done = true;
+    el.contentEditable = 'false';
+    if (card) card.draggable = true;
+    el.textContent = original;
+  }
+
+  el.addEventListener('blur', () => finish(el.textContent.trim()));
+
+  el.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      el.removeEventListener('keydown', onKey);
+      finish(el.textContent.trim());
+    } else if (e.key === 'Escape') {
+      el.removeEventListener('keydown', onKey);
+      cancel();
+    }
+  });
+}

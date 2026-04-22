@@ -143,6 +143,21 @@ def task_delete(request, project_pk, pk, project=None, membership=None):
 
 @login_required
 @require_POST
+@project_permission(can_edit_task, pk_kwarg='project_pk')
+def task_update_title(request, project_pk, pk, project=None, membership=None):
+    task = get_object_or_404(Task, pk=pk, project=project)
+    title = request.POST.get('title', '').strip()
+    if not title:
+        return JsonResponse({'error': 'El título no puede estar vacío.'}, status=400)
+    if len(title) > 300:
+        return JsonResponse({'error': 'El título es demasiado largo.'}, status=400)
+    task.title = title
+    task.save(update_fields=['title', 'updated_at'])
+    return JsonResponse({'ok': True, 'title': task.title})
+
+
+@login_required
+@require_POST
 @project_permission(can_update_task_status, pk_kwarg='project_pk')
 def task_update_status(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)

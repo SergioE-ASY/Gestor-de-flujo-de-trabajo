@@ -81,12 +81,15 @@
         {% for task in status_data.tasks %}
         <div class="task-card {% if task.is_overdue %}task-card-overdue{% endif %}"
              draggable="true" data-task-id="{{ task.pk }}"
-             onclick="window.location='{% url 'task_detail' project.pk task.pk %}'">
+             data-detail-url="{% url 'task_detail' project.pk task.pk %}"
+             onclick="handleCardClick(event, this)">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <span class="badge badge-{{ task.type }}" style="font-size:0.65rem;">{{ task.get_type_display }}</span>
             <span class="badge badge-{{ task.priority }}" style="font-size:0.65rem;">{{ task.get_priority_display }}</span>
           </div>
-          <div class="task-card-title">{{ task.title }}</div>
+          <div class="task-card-title"
+               title="Doble clic para editar"
+               ondblclick="startInlineTitleEdit(event, this, '{% url 'task_update_title' project.pk task.pk %}')">{{ task.title }}</div>
           <div class="task-card-meta">
             <span class="task-key">{{ project.key }}-{{ task.project_sequence }}</span>
             <div style="display:flex;align-items:center;gap:6px;">
