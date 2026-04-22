@@ -288,9 +288,7 @@ a:hover { color: var(--accent-hover); }
   position: sticky; top: 0; z-index: 50;
 }
 .topbar-left { display: flex; align-items: center; gap: 12px; }
-.topbar-right { display: flex; align-items: center; gap: 8px; position: relative; }
-.topbar-actions { display: flex; align-items: center; gap: 8px; }
-#mobile-actions-btn, #mobile-menu-btn { display: none; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
 .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); }
 .breadcrumb a { color: var(--text-muted); }
 .breadcrumb a:hover { color: var(--text); }
@@ -394,22 +392,14 @@ select.form-control { cursor: pointer; }
 .table tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 /* ─── Kanban Board ─── */
-.board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding-bottom: 16px;
-}
+.board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; }
 .board-col {
-  min-width: 0;
+  flex: 0 0 280px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex; flex-direction: column;
   max-height: calc(100vh - 180px);
-}
-@media (max-width: 1200px) and (min-width: 769px) {
-  .board { grid-template-columns: repeat(2, 1fr); }
 }
 .board-col-header {
   padding: 12px 14px;
@@ -584,36 +574,13 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   padding: 2px 7px; border-radius: 20px; font-size: 0.72rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .form-row, .form-row-3, .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .board { flex-direction: column; }
   .board-col { flex: none; }
-  #mobile-menu-btn, #mobile-actions-btn { display: inline-flex !important; }
-  .topbar-actions {
-    display: none;
-    flex-direction: column;
-    align-items: flex-end;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-    margin-top: 4px;
-    box-shadow: var(--shadow);
-    z-index: 100;
-  }
-  .topbar-actions.open { display: flex; }
-}
-
-@media (max-width: 930px) {
-  #sidebar-projects { order: 1; }
-  #sidebar-orgs { order: 2; }
-  .sidebar-bottom { order: 3; }
 }
 
 /* ─── EasyMDE / CodeMirror theme integration ─── */
