@@ -62,14 +62,68 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
-    if request.method == 'POST':
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Perfil actualizado correctamente.')
-            return redirect('profile')
+    from django.db.models import Sum, Count, Q
+    from tasks.models import Task, TimeLog
 
-    return render(request, 'accounts/profile.html', {'form': form})
+    form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        instance = form.save(commit=False)
+        instance.save(update_fields=['name', 'email', 'avatar'])
+        messages.success(request, 'Perfil actualizado correctamente.')
+        return redirect('profile')
+
+    total_min = (
+        TimeLog.objects.filter(user=request.user)
+        .aggregate(total=Sum('minutes'))['total'] or 0
+    )
+    total_hours = round(total_min / 60, 2)
+
+    task_counts = Task.objects.filter(assignee=request.user).aggregate(
+        done=Count('id', filter=Q(status='done')),
+        in_progress=Count('id', filter=Q(status='in_progress')),
+        in_review=Count('id', filter=Q(status='in_review')),
+        total=Count('id'),
+    )
+
+    hours_by_project = (
+        TimeLog.objects.filter(user=request.user)
+        .values(
+            'task__project__id', 'task__project__name', 'task__project__key',
+            'task__project__organization__id', 'task__project__organization__name',
+        )
+        .annotate(logged_min=Sum('minutes'))
+        .order_by('task__project__organization__name', '-logged_min')
+    )
+    tasks_by_project = (
+        Task.objects.filter(assignee=request.user)
+        .values('project__id')
+        .annotate(total=Count('id'), done=Count('id', filter=Q(status='done')))
+    )
+    tasks_map = {str(r['project__id']): r for r in tasks_by_project}
+
+    orgs_map = {}
+    for row in hours_by_project:
+        oid = str(row['task__project__organization__id'])
+        pid = str(row['task__project__id'])
+        if oid not in orgs_map:
+            orgs_map[oid] = {'name': row['task__project__organization__name'], 'projects': []}
+        t = tasks_map.get(pid, {})
+        orgs_map[oid]['projects'].append({
+            'id': row['task__project__id'],
+            'name': row['task__project__name'],
+            'key': row['task__project__key'],
+            'logged': round(row['logged_min'] / 60, 2),
+            'tasks_total': t.get('total', 0),
+            'tasks_done': t.get('done', 0),
+        })
+    activity_by_org = list(orgs_map.values())
+
+    return render(request, 'accounts/profile.html', {
+        'form': form,
+        'total_hours': total_hours,
+        'task_counts': task_counts,
+        'activity_by_org': activity_by_org,
+    })
 
 
 @login_required
