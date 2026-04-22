@@ -29,7 +29,6 @@ class Project(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     start_date = models.DateField(null=True, blank=True)
     due_date = models.DateField(null=True, blank=True)
-    hour_budget = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -47,17 +46,6 @@ class Project(models.Model):
     def soft_delete(self):
         self.deleted_at = timezone.now()
         self.save(update_fields=['deleted_at'])
-
-    def get_hour_stats(self):
-        from django.db.models import Sum
-        consumed = self.time_logs.aggregate(total=Sum('hours'))['total'] or 0
-        if self.hour_budget:
-            remaining = self.hour_budget - consumed
-            pct = min(round(float(consumed) / float(self.hour_budget) * 100), 100)
-        else:
-            remaining = None
-            pct = 0
-        return {'budget': self.hour_budget, 'consumed': consumed, 'remaining': remaining, 'pct': pct}
 
     def get_task_stats(self):
         tasks = self.tasks.all()

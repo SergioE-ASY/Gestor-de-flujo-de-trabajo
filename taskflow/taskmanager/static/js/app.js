@@ -17,7 +17,7 @@ function applyTheme(base, color) {
 function setBaseTheme(base) {
   const color = document.documentElement.getAttribute('data-color') || 'default';
   applyTheme(base, color);
-  fetch('/set-theme/', {
+  fetch('/accounts/set-theme/', {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'base=' + encodeURIComponent(base),
@@ -28,7 +28,7 @@ function setAccentColor(color, isPremium) {
   if (PREMIUM_COLORS.includes(color) && !isPremium) return;
   const base = document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(base, color);
-  fetch('/set-theme/', {
+  fetch('/accounts/set-theme/', {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'color=' + encodeURIComponent(color),
@@ -62,34 +62,12 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ─── Inactividad: cerrar sesión tras 30 min sin actividad ───
-const SESSION_TIMEOUT_MS = 30 * 60 *1000; // 30 minutos
-let _inactivityTimer = null;
-
-function resetInactivityTimer() {
-  if (_inactivityTimer) clearTimeout(_inactivityTimer);
-  _inactivityTimer = setTimeout(() => {
-    window.location.href = '/logout/';
-  }, SESSION_TIMEOUT_MS);
-}
-
-// Reiniciar timer con interacción REAL del usuario
-['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
-  document.addEventListener(evt, resetInactivityTimer, { passive: true });
-});
-resetInactivityTimer();
-
 // ─── Notification counter ───
 async function fetchNotifCount() {
   const el = document.getElementById('notif-count');
   if (!el) return;
   try {
     const r = await fetch('/notifications/count/');
-    if (r.status === 401) {
-      // Sesión expirada en el servidor
-      window.location.href = '/login/';
-      return;
-    }
     const data = await r.json();
     el.textContent = data.count || '';
     el.style.display = data.count > 0 ? 'flex' : 'none';
@@ -172,22 +150,3 @@ colorInputs.forEach(inp => {
 // ─── Key auto-uppercase ───
 const keyInput = document.getElementById('id-key');
 if (keyInput) keyInput.addEventListener('input', () => keyInput.value = keyInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10));
-
-// ─── Mobile menus outside click ───
-document.addEventListener('click', e => {
-  const sidebar = document.getElementById('sidebar');
-  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-  if (sidebar && sidebar.classList.contains('open') && mobileMenuBtn) {
-    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-      sidebar.classList.remove('open');
-    }
-  }
-
-  const topbarActions = document.getElementById('topbar-actions');
-  const mobileActionsBtn = document.getElementById('mobile-actions-btn');
-  if (topbarActions && topbarActions.classList.contains('open') && mobileActionsBtn) {
-    if (!topbarActions.contains(e.target) && !mobileActionsBtn.contains(e.target)) {
-      topbarActions.classList.remove('open');
-    }
-  }
-});
