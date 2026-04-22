@@ -13,6 +13,18 @@ from projects.permissions import (
     can_manage_tags,
 )
 from shared.decorators import require_project_member, project_permission
+from decimal import Decimal
+
+
+def _parse_hours(post):
+    """Convert separate h/m POST fields to a Decimal hours value, or None."""
+    try:
+        h = int(post.get('estimated_h', 0) or 0)
+        m = int(post.get('estimated_m', 0) or 0)
+        total = Decimal(h) + Decimal(m) / 60
+        return total if total > 0 else None
+    except (ValueError, TypeError):
+        return None
 
 
 @login_required
@@ -27,7 +39,8 @@ def task_create(request, project_pk, project=None, membership=None):
             status=request.POST.get('status', 'backlog'),
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
-            estimated_min=request.POST.get('estimated_min') or None,
+            estimated_hours=_parse_hours(request.POST) or None,
+            task_responsible_id=request.POST.get('task_responsible') or None,
             sprint_id=request.POST.get('sprint') or None,
             assignee_id=request.POST.get('assignee') or None,
             parent_task_id=request.POST.get('parent_task') or None,
@@ -41,6 +54,12 @@ def task_create(request, project_pk, project=None, membership=None):
                 user=task.assignee, task=task, project=project,
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
+            )
+        if task.task_responsible and task.estimated_hours and task.task_responsible != request.user:
+            Notification.objects.create(
+                user=task.task_responsible, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
             )
 
         messages.success(request, f'Tarea "{task.title}" creada.')
@@ -69,14 +88,13 @@ def task_detail(request, project_pk, pk, project=None, membership=None):
     attachments = task.attachments.select_related('uploaded_by').all()
     time_logs = task.time_logs.select_related('user').all()
     subtasks = task.subtasks.select_related('assignee').all()
-    total_logged = task.get_total_logged_minutes()
+    total_logged_hours = task.get_total_logged_hours()
 
     return render(request, 'tasks/task_detail.html', {
         'project': project, 'task': task, 'membership': membership,
         'comments': comments, 'attachments': attachments,
         'time_logs': time_logs, 'subtasks': subtasks,
-        'total_logged': total_logged,
-        'total_logged_display': f'{total_logged // 60}h {total_logged % 60}m' if total_logged else '0m',
+        'total_logged_hours': total_logged_hours,
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'members': project.members.select_related('user'),
@@ -96,7 +114,14 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.status = request.POST.get('status', task.status)
         task.priority = request.POST.get('priority', task.priority)
         task.due_date = request.POST.get('due_date') or None
-        task.estimated_min = request.POST.get('estimated_min') or None
+        new_hours = _parse_hours(request.POST) or None
+        hours_changed = str(new_hours) != str(task.estimated_hours)
+        if hours_changed:
+            task.hours_validated = False
+        task.estimated_hours = new_hours
+        old_responsible_id = task.task_responsible_id
+        task.task_responsible_id = request.POST.get('task_responsible') or None
+        responsible_changed = task.task_responsible_id != old_responsible_id
         task.sprint_id = request.POST.get('sprint') or None
         old_assignee = task.assignee
         task.assignee_id = request.POST.get('assignee') or None
@@ -113,6 +138,17 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
             )
+        should_notify_responsible = (
+            task.task_responsible and task.estimated_hours
+            and task.task_responsible != request.user
+            and (responsible_changed or hours_changed)
+        )
+        if should_notify_responsible:
+            Notification.objects.create(
+                user=task.task_responsible, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
+            )
 
         messages.success(request, 'Tarea actualizada.')
         return redirect('task_detail', project_pk=project_pk, pk=pk)
@@ -122,11 +158,16 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
     tags = project.tags.all()
     selected_tag_ids = list(task.task_tags.values_list('tag_id', flat=True))
 
+    est = task.estimated_hours or 0
+    est_total_min = round(float(est) * 60)
+    est_h, est_m = divmod(est_total_min, 60)
+
     return render(request, 'tasks/task_form.html', {
         'project': project, 'task': task, 'members': members,
         'sprints': sprints, 'tags': tags, 'selected_tag_ids': selected_tag_ids,
         'type_choices': Task.TYPE_CHOICES, 'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES, 'title': 'Editar Tarea',
+        'est_h': est_h, 'est_m': est_m,
     })
 
 
@@ -201,17 +242,90 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
 @require_POST
 @project_permission(can_log_time, pk_kwarg='project_pk')
 def timelog_create(request, project_pk, task_pk, project=None, membership=None):
+    from decimal import Decimal, InvalidOperation
     task = get_object_or_404(Task, pk=task_pk, project=project)
-    minutes = request.POST.get('minutes')
-    if minutes and int(minutes) > 0:
-        TimeLog.objects.create(
-            task=task, user=request.user,
-            minutes=int(minutes),
-            note=request.POST.get('note', ''),
-            logged_date=request.POST.get('logged_date') or timezone.now().date(),
-        )
-        messages.success(request, 'Tiempo registrado.')
+    try:
+        h = int(request.POST.get('hours_h', 0) or 0)
+        m = int(request.POST.get('hours_m', 0) or 0)
+        hours = Decimal(h) + Decimal(m) / 60
+        if hours <= 0:
+            raise ValueError
+    except (InvalidOperation, ValueError, TypeError):
+        messages.error(request, 'Introduce un tiempo válido.')
+        return redirect('task_detail', project_pk=project_pk, pk=task_pk)
+
+    from django.db.models import Sum
+    hours_before = task.time_logs.aggregate(total=Sum('hours'))['total'] or 0
+
+    TimeLog.objects.create(
+        task=task, project=project, user=request.user,
+        hours=hours,
+        note=request.POST.get('note', ''),
+        logged_date=request.POST.get('logged_date') or timezone.now().date(),
+    )
+    display = f'{h}h {m}min' if m else f'{h}h'
+    messages.success(request, f'{display} registradas correctamente.')
+
+    # Alert managers only on the first crossing of the estimated budget
+    if task.estimated_hours and task.hours_validated:
+        hours_after = hours_before + hours
+        if hours_before < task.estimated_hours <= hours_after:
+            from notifications.models import Notification
+            from projects.models import ProjectMember
+            managers = ProjectMember.objects.filter(
+                project=project, role__in=('owner', 'manager')
+            ).select_related('user').exclude(user=request.user)
+            total_logged = hours_after
+            for pm in managers:
+                Notification.objects.create(
+                    user=pm.user,
+                    task=task,
+                    project=project,
+                    type='hours_exceeded',
+                    message=(
+                        f'⚠️ La tarea "{task.title}" ha superado su estimación: '
+                        f'{total_logged}h registradas de {task.estimated_hours}h estimadas.'
+                    ),
+                )
+
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
+
+
+@login_required
+@require_POST
+@require_project_member(pk_kwarg='project_pk')
+def task_validate_hours(request, project_pk, pk, project=None, membership=None):
+    task = get_object_or_404(Task, pk=pk, project=project)
+    if request.user != task.task_responsible:
+        messages.error(request, 'Solo el responsable de horas puede validar la estimación.')
+        return redirect('task_detail', project_pk=project_pk, pk=pk)
+    from notifications.models import Notification
+    action = request.POST.get('action')
+    notify_user = task.assignee if task.assignee and task.assignee != request.user else None
+
+    if action == 'validate':
+        task.hours_validated = True
+        task.save(update_fields=['hours_validated'])
+        messages.success(request, 'Estimación de horas validada.')
+        if notify_user:
+            Notification.objects.create(
+                user=notify_user, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} ha aprobado la estimación de {task.estimated_hours}h para: {task.title}',
+            )
+    elif action == 'reject':
+        hours_before = task.estimated_hours
+        task.hours_validated = False
+        task.estimated_hours = None
+        task.save(update_fields=['hours_validated', 'estimated_hours'])
+        messages.info(request, 'Estimación rechazada. El creador puede introducir una nueva.')
+        if notify_user:
+            Notification.objects.create(
+                user=notify_user, task=task, project=project,
+                type='hours_validation_requested',
+                message=f'{request.user.name} ha rechazado la estimación de {hours_before}h para: {task.title}. Por favor, introduce una nueva estimación.',
+            )
+    return redirect('task_detail', project_pk=project_pk, pk=pk)
 
 
 @login_required

@@ -1,0 +1,237 @@
+{% extends 'base/base.html' %}
+{% block title %}Resumen de horas — {{ org.name }}{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}">Dashboard</a>
+<span class="breadcrumb-sep">/</span>
+<a href="{% url 'org_detail' org.pk %}">{{ org.name }}</a>
+<span class="breadcrumb-sep">/</span>
+Resumen de horas
+{% endblock %}
+
+{% block content %}
+<div style="max-width:960px;margin:0 auto;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <h2 style="font-size:1.15rem;font-weight:700;margin:0;">Resumen de horas — {{ org.name }}</h2>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'org_hours_monthly' org.pk %}" class="btn btn-ghost btn-sm">Resumen mensual</a>
+      <a href="{% url 'org_detail' org.pk %}" class="btn btn-secondary btn-sm">← Volver</a>
+    </div>
+  </div>
+
+  <!-- Exportar -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <span style="font-weight:600;font-size:0.95rem;">Exportar registros</span>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" form="export-form" name="format" value="csv" class="btn btn-secondary btn-sm">
+          ↓ CSV
+        </button>
+        <button type="submit" form="export-form" name="format" value="xlsx" class="btn btn-primary btn-sm">
+          ↓ Excel
+        </button>
+      </div>
+    </div>
+    <form id="export-form" method="get" action="{% url 'org_hours_export' org.pk %}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Desde</label>
+          <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Proyecto</label>
+          <select name="project" class="form-control">
+            <option value="">Todos</option>
+            {% for p in all_projects %}
+            <option value="{{ p.pk }}" {% if request.GET.project == p.pk|stringformat:"s" %}selected{% endif %}>
+              [{{ p.key }}] {{ p.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Miembro</label>
+          <select name="user" class="form-control">
+            <option value="">Todos</option>
+            {% for mem in all_members %}
+            <option value="{{ mem.user.pk }}" {% if request.GET.user == mem.user.pk|stringformat:"s" %}selected{% endif %}>
+              {{ mem.user.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPIs globales -->
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Presupuesto total</div>
+      <div style="font-size:1.6rem;font-weight:700;">{% if total_budget %}{{ total_budget|floatformat:0 }}h{% else %}—{% endif %}</div>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Horas consumidas</div>
+      <div style="font-size:1.6rem;font-weight:700;">{{ total_consumed|floatformat:2 }}h</div>
+    </div>
+    {% if total_budget %}
+    <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Horas restantes</div>
+      <div style="font-size:1.6rem;font-weight:700;color:{% if total_remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+        {% if total_remaining >= 0 %}{{ total_remaining|floatformat:0 }}h{% else %}−{{ total_remaining|floatformat:0|slice:"1:" }}h{% endif %}
+      </div>
+    </div>
+    <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Uso global</div>
+      <div style="font-size:1.6rem;font-weight:700;">{{ total_pct }}%</div>
+      <div class="progress" style="height:4px;margin-top:8px;">
+        <div class="progress-bar {% if total_pct >= 100 %}danger{% elif total_pct >= 80 %}warning{% else %}success{% endif %}"
+          style="width:{{ total_pct }}%"></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Desglose por proyecto -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title" style="margin-bottom:16px;">Por proyecto</div>
+    {% if per_project %}
+    <div style="overflow-x:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Proyecto</th>
+            <th style="text-align:right;">Presupuesto</th>
+            <th style="text-align:right;">Consumidas</th>
+            <th style="text-align:right;">Restantes</th>
+            <th style="width:200px;">Progreso</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in per_project %}
+          <tr>
+            <td>
+              <a href="{% url 'project_detail' row.project.pk %}" style="color:var(--text);font-weight:500;">
+                <span style="color:var(--text-muted);font-size:0.8rem;margin-right:4px;">[{{ row.project.key }}]</span>{{ row.project.name }}
+              </a>
+            </td>
+            <td style="text-align:right;color:var(--text-muted);">
+              {% if row.budget %}{{ row.budget }}h{% else %}—{% endif %}
+            </td>
+            <td style="text-align:right;font-weight:600;">{{ row.consumed }}h</td>
+            <td style="text-align:right;">
+              {% if row.remaining is not None %}
+                <span style="color:{% if row.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+                  {% if row.remaining >= 0 %}{{ row.remaining|floatformat:2 }}h{% else %}−{{ row.remaining|floatformat:2|slice:"1:" }}h{% endif %}
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if row.budget %}
+              <div class="progress" style="height:6px;">
+                <div class="progress-bar {% if row.pct >= 100 %}danger{% elif row.pct >= 80 %}warning{% else %}success{% endif %}"
+                  style="width:{{ row.pct }}%"></div>
+              </div>
+              <span style="font-size:0.75rem;color:var(--text-muted);">{{ row.pct }}%</span>
+              {% else %}
+              <span style="font-size:0.78rem;color:var(--text-muted);">Sin presupuesto</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'project_detail' row.project.pk %}" class="btn btn-ghost btn-sm">Ver</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-sm">No hay proyectos activos.</p>
+    {% endif %}
+  </div>
+
+  <!-- Desglose por miembro -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;">Por miembro</div>
+    {% if per_member %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Miembro</th>
+          <th style="text-align:right;">Total horas</th>
+          {% if total_consumed %}<th style="width:200px;">Proporción global</th>{% endif %}
+          <th style="width:36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in per_member %}
+        <tr style="cursor:pointer;" onclick="toggleBreakdown('{{ row.uid }}')">
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="avatar avatar-sm">{{ row.name|slice:":1"|upper }}</div>
+              {{ row.name }}
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
+          {% if total_consumed %}
+          <td>
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar" style="width:{% widthratio row.logged total_consumed 100 %}%"></div>
+            </div>
+          </td>
+          {% endif %}
+          <td style="color:var(--text-muted);font-size:0.85rem;" id="chevron-{{ row.uid }}">▶</td>
+        </tr>
+        <tr id="breakdown-{{ row.uid }}" style="display:none;">
+          <td colspan="4" style="padding:0 0 8px 40px;">
+            <table style="width:100%;font-size:0.83rem;border-collapse:collapse;">
+              <thead>
+                <tr style="color:var(--text-muted);">
+                  <th style="padding:4px 8px;text-align:left;font-weight:500;">Proyecto</th>
+                  <th style="padding:4px 8px;text-align:right;font-weight:500;">Horas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for proj_row in row.projects %}
+                <tr>
+                  <td style="padding:4px 8px;">
+                    <a href="{% url 'project_detail' proj_row.project__id %}" style="color:var(--text-muted);">
+                      [{{ proj_row.project__key }}] {{ proj_row.project__name }}
+                    </a>
+                  </td>
+                  <td style="padding:4px 8px;text-align:right;">{{ proj_row.logged }}h</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" style="padding:4px 8px;color:var(--text-muted);">Sin registros.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay horas registradas en esta organización.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleBreakdown(uid) {
+  const row = document.getElementById('breakdown-' + uid);
+  const chevron = document.getElementById('chevron-' + uid);
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  chevron.textContent = open ? '▶' : '▼';
+}
+</script>
+{% endblock %}

@@ -11,6 +11,8 @@ class Notification(models.Model):
         ('status_changed', 'Estado cambiado'),
         ('sprint_started', 'Sprint iniciado'),
         ('mentioned', 'Mencionado'),
+        ('hours_validation_requested', 'Validación de horas solicitada'),
+        ('hours_exceeded', 'Horas estimadas superadas'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
