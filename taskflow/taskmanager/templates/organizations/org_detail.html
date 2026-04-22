@@ -4,7 +4,6 @@
 {% block topbar_actions %}
   {% if membership.role in 'owner,admin' %}
   <a href="{% url 'org_hours_overview' org.pk %}" class="btn btn-ghost btn-sm">Horas</a>
-  <a href="{% url 'org_edit' org.pk %}" class="btn btn-ghost btn-sm">Editar Org</a>
   <button class="btn btn-secondary btn-sm" onclick="openModal('invite-modal')">+ Invitar miembro</button>
   {% endif %}
   <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm">+ Nuevo proyecto</a>
