@@ -13,6 +13,18 @@ from projects.permissions import (
     can_manage_tags,
 )
 from shared.decorators import require_project_member, project_permission
+from decimal import Decimal
+
+
+def _parse_hours(post):
+    """Convert separate h/m POST fields to a Decimal hours value, or None."""
+    try:
+        h = int(post.get('estimated_h', 0) or 0)
+        m = int(post.get('estimated_m', 0) or 0)
+        total = Decimal(h) + Decimal(m) / 60
+        return total if total > 0 else None
+    except (ValueError, TypeError):
+        return None
 
 
 @login_required
@@ -27,7 +39,7 @@ def task_create(request, project_pk, project=None, membership=None):
             status=request.POST.get('status', 'backlog'),
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
-            estimated_hours=request.POST.get('estimated_hours') or None,
+            estimated_hours=_parse_hours(request.POST) or None,
             task_responsible_id=request.POST.get('task_responsible') or None,
             sprint_id=request.POST.get('sprint') or None,
             assignee_id=request.POST.get('assignee') or None,
@@ -102,7 +114,7 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.status = request.POST.get('status', task.status)
         task.priority = request.POST.get('priority', task.priority)
         task.due_date = request.POST.get('due_date') or None
-        new_hours = request.POST.get('estimated_hours') or None
+        new_hours = _parse_hours(request.POST) or None
         hours_changed = str(new_hours) != str(task.estimated_hours)
         if hours_changed:
             task.hours_validated = False
@@ -146,11 +158,16 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
     tags = project.tags.all()
     selected_tag_ids = list(task.task_tags.values_list('tag_id', flat=True))
 
+    est = task.estimated_hours or 0
+    est_total_min = round(float(est) * 60)
+    est_h, est_m = divmod(est_total_min, 60)
+
     return render(request, 'tasks/task_form.html', {
         'project': project, 'task': task, 'members': members,
         'sprints': sprints, 'tags': tags, 'selected_tag_ids': selected_tag_ids,
         'type_choices': Task.TYPE_CHOICES, 'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES, 'title': 'Editar Tarea',
+        'est_h': est_h, 'est_m': est_m,
     })
 
 
@@ -227,13 +244,14 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
 def timelog_create(request, project_pk, task_pk, project=None, membership=None):
     from decimal import Decimal, InvalidOperation
     task = get_object_or_404(Task, pk=task_pk, project=project)
-    hours_raw = request.POST.get('hours', '').strip()
     try:
-        hours = Decimal(hours_raw)
+        h = int(request.POST.get('hours_h', 0) or 0)
+        m = int(request.POST.get('hours_m', 0) or 0)
+        hours = Decimal(h) + Decimal(m) / 60
         if hours <= 0:
             raise ValueError
-    except (InvalidOperation, ValueError):
-        messages.error(request, 'Introduce un número de horas válido.')
+    except (InvalidOperation, ValueError, TypeError):
+        messages.error(request, 'Introduce un tiempo válido.')
         return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
     from django.db.models import Sum
@@ -245,7 +263,8 @@ def timelog_create(request, project_pk, task_pk, project=None, membership=None):
         note=request.POST.get('note', ''),
         logged_date=request.POST.get('logged_date') or timezone.now().date(),
     )
-    messages.success(request, f'{hours}h registradas correctamente.')
+    display = f'{h}h {m}min' if m else f'{h}h'
+    messages.success(request, f'{display} registradas correctamente.')
 
     # Alert managers only on the first crossing of the estimated budget
     if task.estimated_hours and task.hours_validated:

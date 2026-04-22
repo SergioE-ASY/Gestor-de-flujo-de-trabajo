@@ -269,16 +269,22 @@
       {% endif %}
       <form method="post" action="{% url 'timelog_create' project.pk task.pk %}">
         {% csrf_token %}
-        <div class="form-row">
-          <div class="form-group">
-            <input type="number" name="hours" class="form-control" placeholder="Horas (ej: 1.5)" min="0.25" step="0.25" required>
-          </div>
-          <div class="form-group">
-            <input type="date" name="logged_date" class="form-control">
+        <div class="form-group">
+          <label class="form-label">Tiempo trabajado</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" name="hours_h" class="form-control" placeholder="0" min="0" style="width:72px;text-align:center;" value="0">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">h</span>
+            <input type="number" name="hours_m" class="form-control" placeholder="0" min="0" max="59" style="width:72px;text-align:center;" value="0">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">min</span>
           </div>
         </div>
         <div class="form-group">
-          <input type="text" name="note" class="form-control" placeholder="Nota (opcional)">
+          <label class="form-label">Fecha</label>
+          <input type="date" name="logged_date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota <span style="color:var(--text-muted);font-weight:400;">(opcional)</span></label>
+          <input type="text" name="note" class="form-control" placeholder="¿En qué trabajaste?">
         </div>
         <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;">Registrar horas</button>
       </form>
