@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+from django.http import JsonResponse
 from .models import Organization, OrganizationUser
 from .permissions import can_manage_members, can_assign_role, is_last_owner
 from shared.decorators import require_org_member, org_permission
@@ -118,3 +120,77 @@ def org_member_update(request, pk, member_pk, org=None, org_membership=None):
             member.save()
             messages.success(request, f'Rol de {member.user.name} actualizado.')
     return redirect('org_detail', pk=pk)
+
+
+@login_required
+def global_search(request):
+    from projects.models import ProjectMember
+    from tasks.models import Task
+    from django.urls import reverse
+
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'tasks': [], 'projects': [], 'users': []})
+
+    member_project_ids = ProjectMember.objects.filter(
+        user=request.user
+    ).values_list('project_id', flat=True)
+
+    task_qs = (
+        Task.objects
+        .filter(project_id__in=member_project_ids, title__icontains=q)
+        .select_related('project')
+        .order_by('-updated_at')[:5]
+    )
+    tasks = [
+        {
+            'title': t.title,
+            'key': f'{t.project.key}-{t.project_sequence}',
+            'project': t.project.name,
+            'url': reverse('task_detail', kwargs={'project_pk': str(t.project_id), 'pk': str(t.pk)}),
+        }
+        for t in task_qs
+    ]
+
+    proj_qs = (
+        Project.objects
+        .filter(
+            id__in=member_project_ids,
+            deleted_at__isnull=True,
+        )
+        .filter(Q(name__icontains=q) | Q(key__icontains=q))
+        .order_by('name')[:5]
+    )
+    projects = [
+        {
+            'title': p.name,
+            'key': p.key,
+            'url': reverse('project_detail', kwargs={'pk': str(p.pk)}),
+        }
+        for p in proj_qs
+    ]
+
+    org_ids = OrganizationUser.objects.filter(
+        user=request.user
+    ).values_list('organization_id', flat=True)
+    user_qs = (
+        User.objects
+        .filter(
+            Q(name__icontains=q) | Q(email__icontains=q),
+            organization_memberships__organization_id__in=org_ids,
+            is_active=True,
+        )
+        .exclude(pk=request.user.pk)
+        .distinct()
+        .order_by('name')[:5]
+    )
+    users = [
+        {
+            'title': u.name,
+            'subtitle': u.email,
+            'initials': u.get_initials(),
+        }
+        for u in user_qs
+    ]
+
+    return JsonResponse({'tasks': tasks, 'projects': projects, 'users': users})

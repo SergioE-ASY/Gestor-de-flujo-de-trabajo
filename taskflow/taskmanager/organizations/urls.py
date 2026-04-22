@@ -9,4 +9,5 @@ urlpatterns = [
     path('organizations/<uuid:pk>/invite/', views.org_invite, name='org_invite'),
     path('organizations/<uuid:pk>/members/<uuid:member_pk>/role/', views.org_member_update, name='org_member_update'),
     path('organizations/<uuid:pk>/members/<uuid:member_pk>/remove/', views.org_member_remove, name='org_member_remove'),
+    path('search/', views.global_search, name='global_search'),
 ]

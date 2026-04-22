@@ -579,3 +579,24 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   .board { flex-direction: column; }
   .board-col { flex: none; }
 }
+
+/* ─── Global Search ─── */
+.search-modal { max-width: 600px; max-height: 76vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.search-input-wrap { padding: 13px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.search-input { flex: 1; background: transparent; border: none; outline: none; font-size: 0.975rem; color: var(--text); font-family: inherit; }
+.search-input::placeholder { color: var(--text-muted); }
+.search-results { overflow-y: auto; flex: 1; }
+.search-group-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 10px 16px 4px; }
+.search-item { display: flex; align-items: center; gap: 12px; padding: 9px 16px; cursor: pointer; text-decoration: none; color: var(--text); transition: background 0.1s; }
+.search-item:hover, .search-item.active { background: var(--bg3); color: var(--text); text-decoration: none; }
+.search-item-icon { width: 32px; height: 32px; border-radius: 6px; background: var(--bg3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.62rem; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); }
+.search-item-text { flex: 1; min-width: 0; }
+.search-item-title { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-item-sub { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.search-empty { text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 0.875rem; }
+.search-kbd { font-size: 0.7rem; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text-muted); font-family: var(--font-mono); flex-shrink: 0; }
+.search-trigger .search-kbd-hint { display: none; }
+@media (min-width: 769px) {
+  .search-trigger { display: flex; align-items: center; gap: 6px; padding: 0 10px; width: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.78rem; }
+  .search-trigger .search-kbd-hint { display: inline; }
+}
