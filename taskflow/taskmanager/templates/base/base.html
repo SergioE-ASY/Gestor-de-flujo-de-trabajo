@@ -1,4 +1,4 @@
-{% load static markdown_extras %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
   {% block extra_css %}{% endblock %}
   <script>(function(){var b='{% if user.is_authenticated %}{{ user.base_theme }}{% else %}'+(localStorage.getItem('base-theme')||'dark')+'{% endif %}';var c='{% if user.is_authenticated %}{{ user.color_theme }}{% else %}'+(localStorage.getItem('color-theme')||'default')+'{% endif %}';document.documentElement.setAttribute('data-theme',b);document.documentElement.setAttribute('data-color',c);})();</script>
 </head>
@@ -158,23 +157,6 @@
 {% endif %}
 
 <script src="{% static 'js/app.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  document.querySelectorAll('textarea.markdown-editor').forEach(function(el){
-    try{
-      var mde = new EasyMDE({element: el, spellChecker:false, toolbar:["bold","italic","heading","|","quote","unordered-list","ordered-list","|","code","table","link","image","|","preview","side-by-side","fullscreen"]});
-      // Sync EasyMDE content back to the textarea before form submission
-      var form = el.closest('form');
-      if(form){
-        form.addEventListener('submit', function(){
-          el.value = mde.value();
-        });
-      }
-    }catch(e){console.error('EasyMDE init error', e)}
-  });
-});
-</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
