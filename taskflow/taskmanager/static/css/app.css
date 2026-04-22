@@ -393,20 +393,18 @@ select.form-control { cursor: pointer; }
 /* ─── Kanban Board ─── */
 .board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
   gap: 16px;
   padding-bottom: 16px;
+  overflow-x: auto;
 }
 .board-col {
-  min-width: 0;
+  min-width: 220px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex; flex-direction: column;
   max-height: calc(100vh - 180px);
-}
-@media (max-width: 1200px) and (min-width: 769px) {
-  .board { grid-template-columns: repeat(2, 1fr); }
 }
 .board-col-header {
   padding: 12px 14px;
@@ -443,6 +441,8 @@ select.form-control { cursor: pointer; }
 .progress { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
 .progress-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
 .progress-bar.success { background: var(--success); }
+.progress-bar.warning { background: var(--warning); }
+.progress-bar.danger { background: var(--danger); }
 
 /* ─── Stats grid ─── */
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
@@ -586,8 +586,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .form-row, .form-row-3, .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .board { flex-direction: column; }
-  .board-col { flex: none; }
+  .board { grid-template-columns: repeat(5, minmax(200px, 1fr)); }
+  .board-col { min-width: 200px; }
   #mobile-menu-btn, #mobile-actions-btn { display: inline-flex !important; }
   .topbar-actions {
     display: none;

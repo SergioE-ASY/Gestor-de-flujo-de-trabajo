@@ -172,38 +172,76 @@
     </form>
   </div>
 
-  <!-- 2FA -->
+  <!-- Actividad global -->
   <div class="card" style="margin-top:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div>
-        <div style="font-weight:600;font-size:0.95rem;">Autenticación en dos pasos (2FA)</div>
-        <div class="text-muted text-sm" style="margin-top:3px;">
-          {% if totp_enabled %}
-            Activada — se pedirá un código al iniciar sesión.
-          {% else %}
-            Desactivada — actívala para mayor seguridad.
-          {% endif %}
-        </div>
+    <div class="section-title" style="margin-bottom:16px;">Mi actividad</div>
+
+    <!-- KPIs -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+      <div style="flex:1;min-width:110px;background:var(--bg3);border-radius:var(--radius);padding:12px 16px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:700;">{{ total_hours|floatformat:1 }}h</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Horas totales</div>
       </div>
-      {% if totp_enabled %}
-        <button onclick="document.getElementById('disable-2fa-form').style.display=document.getElementById('disable-2fa-form').style.display==='none'?'block':'none'"
-          class="btn btn-secondary" style="font-size:0.82rem;">Desactivar 2FA</button>
-      {% else %}
-        <a href="{% url 'two_factor_setup' %}" class="btn btn-primary" style="font-size:0.82rem;">Activar 2FA</a>
-      {% endif %}
+      <div style="flex:1;min-width:110px;background:var(--bg3);border-radius:var(--radius);padding:12px 16px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:700;">{{ task_counts.total }}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Tareas asignadas</div>
+      </div>
+      <div style="flex:1;min-width:110px;background:var(--bg3);border-radius:var(--radius);padding:12px 16px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--success);">{{ task_counts.done }}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Completadas</div>
+      </div>
+      <div style="flex:1;min-width:110px;background:var(--bg3);border-radius:var(--radius);padding:12px 16px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--accent);">{{ task_counts.in_progress }}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">En progreso</div>
+      </div>
+      <div style="flex:1;min-width:110px;background:var(--bg3);border-radius:var(--radius);padding:12px 16px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--warning);">{{ task_counts.in_review }}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">En revisión</div>
+      </div>
     </div>
-    {% if totp_enabled %}
-    <div id="disable-2fa-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-      <form method="post" action="{% url 'two_factor_disable' %}">
-        {% csrf_token %}
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label">Código de verificación</label>
-          <input type="text" name="token" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
-            class="form-control" placeholder="123456" required>
+
+    <!-- Historial por organización → proyecto -->
+    {% if activity_by_org %}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      {% for org in activity_by_org %}
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">
+          {{ org.name }}
         </div>
-        <button type="submit" class="btn btn-danger" style="font-size:0.82rem;">Confirmar desactivación</button>
-      </form>
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+          <thead>
+            <tr style="color:var(--text-muted);font-size:0.75rem;">
+              <th style="padding:4px 0;text-align:left;font-weight:500;">Proyecto</th>
+              <th style="padding:4px 8px;text-align:right;font-weight:500;">Horas</th>
+              <th style="padding:4px 8px;text-align:right;font-weight:500;">Tareas</th>
+              <th style="padding:4px 8px;text-align:right;font-weight:500;">Completadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in org.projects %}
+            <tr style="border-top:1px solid var(--border);">
+              <td style="padding:8px 0;">
+                <a href="{% url 'project_detail' p.id %}" style="color:var(--text);">
+                  <span style="color:var(--text-muted);font-size:0.78rem;">[{{ p.key }}]</span> {{ p.name }}
+                </a>
+              </td>
+              <td style="padding:8px;text-align:right;font-weight:600;">{{ p.logged }}h</td>
+              <td style="padding:8px;text-align:right;color:var(--text-muted);">{{ p.tasks_total }}</td>
+              <td style="padding:8px;text-align:right;">
+                {% if p.tasks_total %}
+                <span style="color:var(--success);">{{ p.tasks_done }}</span>
+                <span style="color:var(--text-muted);font-size:0.78rem;">/{{ p.tasks_total }}</span>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
     </div>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay actividad registrada.</p>
     {% endif %}
   </div>
 

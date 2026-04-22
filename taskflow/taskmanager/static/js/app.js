@@ -17,7 +17,7 @@ function applyTheme(base, color) {
 function setBaseTheme(base) {
   const color = document.documentElement.getAttribute('data-color') || 'default';
   applyTheme(base, color);
-  fetch('/accounts/set-theme/', {
+  fetch('/set-theme/', {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'base=' + encodeURIComponent(base),
@@ -28,7 +28,7 @@ function setAccentColor(color, isPremium) {
   if (PREMIUM_COLORS.includes(color) && !isPremium) return;
   const base = document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(base, color);
-  fetch('/accounts/set-theme/', {
+  fetch('/set-theme/', {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'color=' + encodeURIComponent(color),
