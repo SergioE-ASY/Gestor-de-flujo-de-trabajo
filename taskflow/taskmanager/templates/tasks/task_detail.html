@@ -42,7 +42,7 @@
         {% if task.completed_at %} · Completada {{ task.completed_at|date:"d M Y" }}{% endif %}
       </div>
       {% if task.description %}
-      <div style="font-size:0.9rem;line-height:1.7;color:var(--text);white-space:pre-wrap;padding-top:12px;border-top:1px solid var(--border);">{{ task.description }}</div>
+      <div class="markdown-content" style="font-size:0.9rem;line-height:1.7;color:var(--text);padding-top:12px;border-top:1px solid var(--border);">{{ task.description|markdown }}</div>
       {% else %}
       <p class="text-muted text-sm" style="padding-top:12px;border-top:1px solid var(--border);">Sin descripción.</p>
       {% endif %}
@@ -101,17 +101,19 @@
             {% if comment.user.avatar %}<img src="{{ comment.user.avatar.url }}" alt="">{% else %}{{ comment.user.get_initials }}{% endif %}
           </div>
           <div class="comment-body" style="flex:1;">
-            <div class="comment-meta">
-              <strong style="color:var(--text);">{{ comment.user.name }}</strong>
-              · {{ comment.created_at|date:"d M Y, H:i" }}
+            <div class="comment-meta" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>
+                <strong style="color:var(--text);">{{ comment.user.name }}</strong>
+                · {{ comment.created_at|date:"d M Y, H:i" }}
+              </span>
               {% if comment.user == request.user %}
-              <form method="post" action="{% url 'comment_delete' project.pk task.pk comment.pk %}" style="display:inline;float:right;" onsubmit="return confirm('¿Eliminar comentario?')">
+              <form method="post" action="{% url 'comment_delete' project.pk task.pk comment.pk %}" style="display:inline;margin:0;" onsubmit="return confirm('¿Eliminar comentario?')">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:2px 6px;color:var(--danger);">✕</button>
+                <button type="submit" class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:2px 6px;color:var(--danger);position:relative;z-index:2;">✕</button>
               </form>
               {% endif %}
             </div>
-            <div class="comment-content">{{ comment.content }}</div>
+            <div class="comment-content">{{ comment.content|markdown }}</div>
           </div>
         </div>
         {% endfor %}
@@ -124,7 +126,7 @@
             {% if request.user.avatar %}<img src="{{ request.user.avatar.url }}" alt="">{% else %}{{ request.user.get_initials }}{% endif %}
           </div>
           <div style="flex:1;">
-            <textarea name="content" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+            <textarea name="content" class="form-control markdown-editor" rows="3" placeholder="Escribe un comentario..."></textarea>
             <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px;">Comentar</button>
           </div>
         </div>
