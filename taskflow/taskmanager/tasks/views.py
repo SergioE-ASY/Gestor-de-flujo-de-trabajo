@@ -236,6 +236,9 @@ def timelog_create(request, project_pk, task_pk, project=None, membership=None):
         messages.error(request, 'Introduce un número de horas válido.')
         return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
+    from django.db.models import Sum
+    hours_before = task.time_logs.aggregate(total=Sum('hours'))['total'] or 0
+
     TimeLog.objects.create(
         task=task, project=project, user=request.user,
         hours=hours,
@@ -243,6 +246,29 @@ def timelog_create(request, project_pk, task_pk, project=None, membership=None):
         logged_date=request.POST.get('logged_date') or timezone.now().date(),
     )
     messages.success(request, f'{hours}h registradas correctamente.')
+
+    # Alert managers only on the first crossing of the estimated budget
+    if task.estimated_hours and task.hours_validated:
+        hours_after = hours_before + hours
+        if hours_before < task.estimated_hours <= hours_after:
+            from notifications.models import Notification
+            from projects.models import ProjectMember
+            managers = ProjectMember.objects.filter(
+                project=project, role__in=('owner', 'manager')
+            ).select_related('user').exclude(user=request.user)
+            total_logged = hours_after
+            for pm in managers:
+                Notification.objects.create(
+                    user=pm.user,
+                    task=task,
+                    project=project,
+                    type='hours_exceeded',
+                    message=(
+                        f'⚠️ La tarea "{task.title}" ha superado su estimación: '
+                        f'{total_logged}h registradas de {task.estimated_hours}h estimadas.'
+                    ),
+                )
+
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
 

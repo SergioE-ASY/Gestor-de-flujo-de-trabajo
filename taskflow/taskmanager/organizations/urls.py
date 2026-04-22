@@ -11,4 +11,5 @@ urlpatterns = [
     path('organizations/<uuid:pk>/members/<uuid:member_pk>/role/', views.org_member_update, name='org_member_update'),
     path('organizations/<uuid:pk>/members/<uuid:member_pk>/remove/', views.org_member_remove, name='org_member_remove'),
     path('organizations/<uuid:pk>/hours/', views.org_hours_overview, name='org_hours_overview'),
+    path('organizations/<uuid:pk>/hours/export/', views.org_hours_export, name='org_hours_export'),
 ]

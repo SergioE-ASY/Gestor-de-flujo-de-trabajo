@@ -206,6 +206,9 @@ def org_hours_overview(request, pk, org=None, org_membership=None):
             'projects': breakdown_by_user.get(uid, []),
         })
 
+    all_projects = list(projects)
+    all_members = org.get_active_members()
+
     return render(request, 'organizations/org_hours_overview.html', {
         'org': org,
         'membership': org_membership,
@@ -215,4 +218,104 @@ def org_hours_overview(request, pk, org=None, org_membership=None):
         'total_consumed': total_consumed,
         'total_remaining': (total_budget - total_consumed) if total_budget else None,
         'total_pct': min(round(total_consumed / total_budget * 100), 100) if total_budget else 0,
+        'all_projects': all_projects,
+        'all_members': all_members,
     })
+
+
+@login_required
+@org_permission(_can_view_org_hours)
+def org_hours_export(request, pk, org=None, org_membership=None):
+    import csv
+    import io
+    from datetime import date
+    from tasks.models import TimeLog
+    from projects.models import Project
+
+    fmt = request.GET.get('format', 'csv')
+    date_from = request.GET.get('date_from') or None
+    date_to = request.GET.get('date_to') or None
+    project_id = request.GET.get('project') or None
+    user_id = request.GET.get('user') or None
+    task_id = request.GET.get('task') or None
+
+    qs = (
+        TimeLog.objects
+        .filter(project__organization=org, project__deleted_at__isnull=True)
+        .select_related('task', 'project', 'user')
+        .order_by('logged_date', 'project__name', 'user__name')
+    )
+    if date_from:
+        qs = qs.filter(logged_date__gte=date_from)
+    if date_to:
+        qs = qs.filter(logged_date__lte=date_to)
+    if project_id:
+        qs = qs.filter(project_id=project_id)
+    if user_id:
+        qs = qs.filter(user_id=user_id)
+    if task_id:
+        qs = qs.filter(task_id=task_id)
+
+    filename_base = f'horas_{org.name.replace(" ", "_")}_{date.today()}'
+    headers = ['Fecha', 'Proyecto', 'Clave', 'Tarea', 'Ref. tarea', 'Usuario', 'Horas', 'Nota']
+
+    def row_data(log):
+        return [
+            log.logged_date.strftime('%Y-%m-%d'),
+            log.project.name,
+            log.project.key,
+            log.task.title,
+            f'{log.project.key}-{log.task.project_sequence}',
+            log.user.name,
+            float(log.hours),
+            log.note or '',
+        ]
+
+    if fmt == 'xlsx':
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+        from django.http import HttpResponse
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Horas'
+
+        # Header row
+        ws.append(headers)
+        header_fill = PatternFill('solid', fgColor='111111')
+        header_font = Font(bold=True, color='FFFFFF')
+        for col, _ in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        for log in qs:
+            ws.append(row_data(log))
+
+        # Auto column width
+        for col in ws.columns:
+            max_len = max(len(str(c.value or '')) for c in col)
+            ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 60)
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        response = HttpResponse(
+            buf.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename_base}.xlsx"'
+        return response
+
+    # Default: CSV
+    from django.http import HttpResponse
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{filename_base}.csv"'
+    response.write('﻿')  # BOM for Excel UTF-8 compat
+    writer = csv.writer(response)
+    writer.writerow(headers)
+    for log in qs:
+        writer.writerow(row_data(log))
+    return response

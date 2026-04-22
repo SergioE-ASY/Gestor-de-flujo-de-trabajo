@@ -16,6 +16,55 @@ Resumen de horas
     <a href="{% url 'org_detail' org.pk %}" class="btn btn-secondary btn-sm">← Volver</a>
   </div>
 
+  <!-- Exportar -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <span style="font-weight:600;font-size:0.95rem;">Exportar registros</span>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" form="export-form" name="format" value="csv" class="btn btn-secondary btn-sm">
+          ↓ CSV
+        </button>
+        <button type="submit" form="export-form" name="format" value="xlsx" class="btn btn-primary btn-sm">
+          ↓ Excel
+        </button>
+      </div>
+    </div>
+    <form id="export-form" method="get" action="{% url 'org_hours_export' org.pk %}">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Desde</label>
+          <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Hasta</label>
+          <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Proyecto</label>
+          <select name="project" class="form-control">
+            <option value="">Todos</option>
+            {% for p in all_projects %}
+            <option value="{{ p.pk }}" {% if request.GET.project == p.pk|stringformat:"s" %}selected{% endif %}>
+              [{{ p.key }}] {{ p.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Miembro</label>
+          <select name="user" class="form-control">
+            <option value="">Todos</option>
+            {% for mem in all_members %}
+            <option value="{{ mem.user.pk }}" {% if request.GET.user == mem.user.pk|stringformat:"s" %}selected{% endif %}>
+              {{ mem.user.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <!-- KPIs globales -->
   <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
     <div style="flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
