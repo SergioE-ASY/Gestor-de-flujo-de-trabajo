@@ -1,0 +1,40 @@
+{% extends 'base/base.html' %}
+{% block title %}Activar 2FA{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a><span class="breadcrumb-sep">/</span><a href="{% url 'profile' %}">Perfil</a><span class="breadcrumb-sep">/</span>Activar 2FA{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:40px auto 0;">
+  <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">Activar autenticación en dos pasos</h2>
+  <div class="card">
+    <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:20px;">
+      Escanea el código QR con una app como <strong style="color:var(--text);">Google Authenticator</strong> o <strong style="color:var(--text);">Authy</strong>, luego introduce el código de 6 dígitos para confirmar.
+    </p>
+
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR 2FA" style="width:180px;height:180px;border-radius:8px;border:4px solid var(--bg3);">
+    </div>
+
+    <details style="margin-bottom:20px;">
+      <summary style="font-size:0.82rem;color:var(--text-muted);cursor:pointer;">¿No puedes escanear el QR? Introduce la clave manualmente</summary>
+      <div style="margin-top:10px;padding:10px;background:var(--bg3);border-radius:var(--radius-sm);font-family:monospace;font-size:0.85rem;word-break:break-all;color:var(--text);">{{ secret }}</div>
+    </details>
+
+    {% if error %}
+    <div class="messages" style="margin-bottom:16px;"><div class="message message-error">{{ error }}</div></div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">Código de verificación</label>
+        <input type="text" name="token" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
+          class="form-control" placeholder="123456" autofocus required>
+      </div>
+      <div class="form-actions">
+        <a href="{% url 'profile' %}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Activar 2FA</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

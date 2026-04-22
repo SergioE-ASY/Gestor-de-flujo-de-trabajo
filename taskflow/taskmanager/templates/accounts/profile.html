@@ -121,6 +121,36 @@
       </div>
     </div>
 
+    <!-- Seguridad: 2FA -->
+    <div id="seguridad" style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+      <div class="section-title" style="margin-bottom:14px;">Seguridad</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:600;margin-bottom:2px;">
+            Autenticación en dos pasos
+            {% if totp_enabled %}
+            <span style="font-size:0.7rem;font-weight:700;background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 8px;border-radius:10px;margin-left:6px;">Activado</span>
+            {% else %}
+            <span style="font-size:0.7rem;font-weight:600;background:var(--bg3);color:var(--text-muted);padding:2px 8px;border-radius:10px;margin-left:6px;">Desactivado</span>
+            {% endif %}
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">
+            {% if totp_enabled %}Tu cuenta está protegida con TOTP (Google Authenticator, Authy…).{% else %}Protege tu cuenta con una app de autenticación.{% endif %}
+          </div>
+        </div>
+        {% if totp_enabled %}
+        <button onclick="document.getElementById('modal-disable-2fa').style.display='flex'"
+          class="btn btn-secondary" style="font-size:0.8rem;padding:6px 14px;">
+          Desactivar
+        </button>
+        {% else %}
+        <a href="{% url 'two_factor_setup' %}" class="btn btn-primary" style="font-size:0.8rem;padding:6px 14px;">
+          Activar 2FA
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="form-group">
@@ -143,8 +173,36 @@
   </div>
 </div>
 
-<!-- Actividad global -->
-<div class="card" style="margin-top:20px;">
+<!-- Modal desactivar 2FA -->
+{% if totp_enabled %}
+<div id="modal-disable-2fa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title">Desactivar 2FA</span>
+      <button class="btn btn-ghost btn-sm btn-icon" onclick="document.getElementById('modal-disable-2fa').style.display='none'">✕</button>
+    </div>
+    <form method="post" action="{% url 'two_factor_disable' %}">
+      {% csrf_token %}
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">Introduce el código de tu app para confirmar que quieres desactivar la autenticación en dos pasos.</p>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Código de verificación</label>
+          <input type="text" name="token" inputmode="numeric" maxlength="6" autocomplete="one-time-code"
+            class="form-control" placeholder="123456" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-disable-2fa').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Desactivar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- Actividad global — mismo ancho que la card principal -->
+<div style="max-width:560px;margin:20px auto 0;">
+<div class="card">
   <div class="section-title" style="margin-bottom:16px;">Mi actividad</div>
 
   <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
@@ -212,5 +270,6 @@
   {% else %}
   <p class="text-muted text-sm">Aún no hay actividad registrada.</p>
   {% endif %}
+</div>
 </div>
 {% endblock %}

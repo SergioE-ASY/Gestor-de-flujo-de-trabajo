@@ -1,18 +1,35 @@
+import io
+import base64
+
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import login, logout, get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django_ratelimit.decorators import ratelimit
+from django_otp.plugins.otp_totp.models import TOTPDevice
 from .forms import LoginForm, RegisterForm, ProfileForm
 
+User = get_user_model()
 PREMIUM_THEMES = {'pink', 'red', 'blue', 'green'}
 
 
 def _rate_limited_response(request, template):
     return render(request, template, {'rate_limited': True}, status=429)
+
+
+def _get_confirmed_device(user):
+    return TOTPDevice.objects.filter(user=user, confirmed=True).first()
+
+
+def _qr_b64(device):
+    import qrcode
+    img = qrcode.make(device.config_url)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    return base64.b64encode(buf.getvalue()).decode()
 
 
 @ratelimit(key='ip', rate='5/m', method='POST', block=False)
@@ -27,6 +44,10 @@ def login_view(request):
     if request.method == 'POST':
         if form.is_valid():
             user = form.get_user()
+            if _get_confirmed_device(user):
+                request.session['2fa_user_pk'] = str(user.pk)
+                request.session['2fa_backend'] = user.backend
+                return redirect('two_factor_verify')
             user.last_login_at = timezone.now()
             user.save(update_fields=['last_login_at'])
             login(request, user)
@@ -34,6 +55,37 @@ def login_view(request):
             return redirect(next_url)
 
     return render(request, 'accounts/login.html', {'form': form})
+
+
+@ratelimit(key='ip', rate='5/m', method='POST', block=False)
+def two_factor_verify(request):
+    user_pk = request.session.get('2fa_user_pk')
+    if not user_pk:
+        return redirect('login')
+    try:
+        user = User.objects.get(pk=user_pk)
+    except User.DoesNotExist:
+        return redirect('login')
+
+    error = None
+    if request.method == 'POST':
+        if getattr(request, 'limited', False):
+            error = 'Demasiados intentos. Espera un momento e inténtalo de nuevo.'
+        else:
+            token = request.POST.get('token', '').strip()
+            device = _get_confirmed_device(user)
+            if device and device.verify_token(token):
+                del request.session['2fa_user_pk']
+                backend = request.session.pop('2fa_backend',
+                    'django.contrib.auth.backends.ModelBackend')
+                user.backend = backend
+                user.last_login_at = timezone.now()
+                user.save(update_fields=['last_login_at'])
+                login(request, user)
+                return redirect(request.GET.get('next', 'dashboard'))
+            error = 'Código incorrecto. Inténtalo de nuevo.'
+
+    return render(request, 'accounts/2fa_verify.html', {'error': error})
 
 
 @ratelimit(key='ip', rate='3/m', method='POST', block=False)
@@ -120,10 +172,58 @@ def profile_view(request):
 
     return render(request, 'accounts/profile.html', {
         'form': form,
+        'totp_enabled': _get_confirmed_device(request.user) is not None,
         'total_hours': total_hours,
         'task_counts': task_counts,
         'activity_by_org': activity_by_org,
     })
+
+
+@login_required
+def two_factor_setup(request):
+    if _get_confirmed_device(request.user):
+        messages.info(request, 'La autenticación en dos pasos ya está activada.')
+        return redirect('profile')
+
+    device, _ = TOTPDevice.objects.get_or_create(
+        user=request.user, confirmed=False,
+        defaults={'name': f'e-asy ({request.user.email})'},
+    )
+
+    error = None
+    if request.method == 'POST':
+        token = request.POST.get('token', '').strip()
+        if device.verify_token(token):
+            device.confirmed = True
+            device.save()
+            messages.success(request, 'Autenticación en dos pasos activada correctamente.')
+            return redirect('profile')
+        error = 'Código incorrecto. Escanea el QR con tu app e inténtalo de nuevo.'
+
+    return render(request, 'accounts/2fa_setup.html', {
+        'device': device,
+        'qr_b64': _qr_b64(device),
+        'secret': device.config_url.split('secret=')[1].split('&')[0],
+        'error': error,
+    })
+
+
+@login_required
+@require_POST
+def two_factor_disable(request):
+    device = _get_confirmed_device(request.user)
+    if not device:
+        messages.info(request, 'La autenticación en dos pasos no está activada.')
+        return redirect('profile')
+
+    token = request.POST.get('token', '').strip()
+    if device.verify_token(token):
+        TOTPDevice.objects.filter(user=request.user).delete()
+        messages.success(request, 'Autenticación en dos pasos desactivada.')
+    else:
+        messages.error(request, 'Código incorrecto. El 2FA no se ha desactivado.')
+
+    return redirect('profile')
 
 
 @login_required
