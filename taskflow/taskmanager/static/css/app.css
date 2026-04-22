@@ -615,3 +615,16 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ─── Filter bar ─── */
+.filter-bar { display:flex; flex-wrap:wrap; gap:12px 24px; padding:12px 0 16px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.filter-group { display:flex; flex-direction:column; gap:6px; }
+.filter-group-label { font-size:0.67rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted); }
+.filter-pills { display:flex; flex-wrap:wrap; gap:5px; }
+.filter-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; cursor:pointer; transition:all 0.12s; font-family:inherit; white-space:nowrap; }
+.filter-pill:hover { border-color:var(--accent); color:var(--accent); }
+.filter-pill.active { background:var(--accent-light); border-color:var(--accent); color:var(--accent); font-weight:600; }
+.filter-select { padding:4px 8px !important; font-size:0.8rem !important; min-width:140px; height:auto !important; }
+.task-card.filter-hidden { display:none !important; }
+.filter-chip { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:20px; background:var(--accent-light); color:var(--accent); font-size:0.75rem; font-weight:600; }
+.filter-chip button { background:none; border:none; cursor:pointer; color:inherit; padding:0; line-height:1; font-size:0.85rem; }

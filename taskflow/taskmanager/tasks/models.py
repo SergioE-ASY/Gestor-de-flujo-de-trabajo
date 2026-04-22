@@ -44,6 +44,7 @@ class Task(models.Model):
     project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='tasks')
     sprint = models.ForeignKey('projects.Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    assignees = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='tasks_assigned', db_table='task_assignee')
     parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subtasks')
     project_sequence = models.PositiveIntegerField(default=0)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')

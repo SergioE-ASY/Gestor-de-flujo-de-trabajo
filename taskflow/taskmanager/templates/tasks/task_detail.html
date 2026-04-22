@@ -227,7 +227,14 @@
       <form method="post" action="{% url 'timelog_create' project.pk task.pk %}">
         {% csrf_token %}
         <div class="form-group">
-          <input type="number" name="minutes" class="form-control" placeholder="Minutos trabajados" min="1" required>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" name="log_h" class="form-control" placeholder="0" min="0"
+                   style="width:68px;text-align:center;" value="0">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">h</span>
+            <input type="number" name="log_m" class="form-control" placeholder="0" min="0" max="59"
+                   style="width:68px;text-align:center;" value="0">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">min</span>
+          </div>
         </div>
         <div class="form-group">
           <input type="text" name="note" class="form-control" placeholder="Nota (opcional)">

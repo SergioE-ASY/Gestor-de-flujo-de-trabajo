@@ -15,6 +15,17 @@ from projects.permissions import (
 from shared.decorators import require_project_member, project_permission
 
 
+def _parse_hm(post, h_field, m_field):
+    """Lee campos h + min del POST y devuelve el total en minutos (int), o None si ambos son 0."""
+    try:
+        h = int(post.get(h_field, 0) or 0)
+        m = int(post.get(m_field, 0) or 0)
+        total = h * 60 + m
+        return total if total > 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
 @login_required
 @project_permission(can_create_task, pk_kwarg='project_pk')
 def task_create(request, project_pk, project=None, membership=None):
@@ -27,18 +38,20 @@ def task_create(request, project_pk, project=None, membership=None):
             status=request.POST.get('status', 'backlog'),
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
-            estimated_min=request.POST.get('estimated_min') or None,
+            estimated_min=_parse_hm(request.POST, 'estimated_h', 'estimated_m'),
             sprint_id=request.POST.get('sprint') or None,
-            assignee_id=request.POST.get('assignee') or None,
             parent_task_id=request.POST.get('parent_task') or None,
         )
+        assignee_ids = [pk for pk in request.POST.getlist('assignees') if pk]
+        if assignee_ids:
+            task.assignees.set(assignee_ids)
         for tag_id in request.POST.getlist('tags'):
             TaskTag.objects.get_or_create(task=task, tag_id=tag_id)
 
         from notifications.models import Notification
-        if task.assignee and task.assignee != request.user:
+        for assignee in task.assignees.exclude(pk=request.user.pk):
             Notification.objects.create(
-                user=task.assignee, task=task, project=project,
+                user=assignee, task=task, project=project,
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
             )
@@ -68,7 +81,7 @@ def task_detail(request, project_pk, pk, project=None, membership=None):
     comments = task.comments.select_related('user').all()
     attachments = task.attachments.select_related('uploaded_by').all()
     time_logs = task.time_logs.select_related('user').all()
-    subtasks = task.subtasks.select_related('assignee').all()
+    subtasks = task.subtasks.prefetch_related('assignees').all()
     total_logged = task.get_total_logged_minutes()
 
     return render(request, 'tasks/task_detail.html', {
@@ -96,10 +109,8 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.status = request.POST.get('status', task.status)
         task.priority = request.POST.get('priority', task.priority)
         task.due_date = request.POST.get('due_date') or None
-        task.estimated_min = request.POST.get('estimated_min') or None
+        task.estimated_min = _parse_hm(request.POST, 'estimated_h', 'estimated_m')
         task.sprint_id = request.POST.get('sprint') or None
-        old_assignee = task.assignee
-        task.assignee_id = request.POST.get('assignee') or None
         task.save()
 
         task.task_tags.all().delete()
@@ -107,12 +118,18 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
             TaskTag.objects.get_or_create(task=task, tag_id=tag_id)
 
         from notifications.models import Notification
-        if task.assignee and task.assignee != old_assignee and task.assignee != request.user:
-            Notification.objects.create(
-                user=task.assignee, task=task, project=project,
-                type='task_assigned',
-                message=f'Se te asignó la tarea: {task.title}',
-            )
+        old_ids = set(task.assignees.values_list('id', flat=True))
+        new_ids = {pk for pk in request.POST.getlist('assignees') if pk}
+        task.assignees.set(new_ids)
+        for added_id in (new_ids - old_ids):
+            from django.contrib.auth import get_user_model
+            added = get_user_model().objects.get(pk=added_id)
+            if added != request.user:
+                Notification.objects.create(
+                    user=added, task=task, project=project,
+                    type='task_assigned',
+                    message=f'Se te asignó la tarea: {task.title}',
+                )
 
         messages.success(request, 'Tarea actualizada.')
         return redirect('task_detail', project_pk=project_pk, pk=pk)
@@ -121,12 +138,16 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
     sprints = project.sprints.filter(status__in=['planned', 'active'])
     tags = project.tags.all()
     selected_tag_ids = list(task.task_tags.values_list('tag_id', flat=True))
+    selected_assignee_ids = list(task.assignees.values_list('id', flat=True))
 
+    est = task.estimated_min or 0
     return render(request, 'tasks/task_form.html', {
         'project': project, 'task': task, 'members': members,
         'sprints': sprints, 'tags': tags, 'selected_tag_ids': selected_tag_ids,
+        'selected_assignee_ids': selected_assignee_ids,
         'type_choices': Task.TYPE_CHOICES, 'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES, 'title': 'Editar Tarea',
+        'est_h': est // 60, 'est_m': est % 60,
     })
 
 
@@ -217,15 +238,16 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
 @project_permission(can_log_time, pk_kwarg='project_pk')
 def timelog_create(request, project_pk, task_pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=task_pk, project=project)
-    minutes = request.POST.get('minutes')
-    if minutes and int(minutes) > 0:
+    minutes = _parse_hm(request.POST, 'log_h', 'log_m')
+    if minutes and minutes > 0:
         TimeLog.objects.create(
             task=task, user=request.user,
-            minutes=int(minutes),
+            minutes=minutes,
             note=request.POST.get('note', ''),
             logged_date=request.POST.get('logged_date') or timezone.now().date(),
         )
-        messages.success(request, 'Tiempo registrado.')
+        h, m = divmod(minutes, 60)
+        messages.success(request, f'{h}h {m}min registradas.' if h else f'{m}min registradas.')
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
 

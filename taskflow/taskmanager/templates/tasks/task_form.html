@@ -78,9 +78,15 @@
           <input type="date" name="due_date" class="form-control" value="{{ task.due_date|date:'Y-m-d'|default:'' }}">
         </div>
         <div class="form-group">
-          <label class="form-label">Estimación (minutos)</label>
-          <input type="number" name="estimated_min" class="form-control" placeholder="ej: 120" min="0"
-                 value="{{ task.estimated_min|default:'' }}">
+          <label class="form-label">Horas estimadas</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" name="estimated_h" class="form-control" placeholder="0" min="0"
+                   style="width:72px;text-align:center;" value="{{ est_h|default:0 }}">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">h</span>
+            <input type="number" name="estimated_m" class="form-control" placeholder="0" min="0" max="59"
+                   style="width:72px;text-align:center;" value="{{ est_m|default:0 }}">
+            <span style="color:var(--text-muted);font-size:0.85rem;flex-shrink:0;">min</span>
+          </div>
         </div>
       </div>
 

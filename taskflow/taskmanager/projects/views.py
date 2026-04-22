@@ -82,6 +82,7 @@ def project_detail(request, pk, project=None, membership=None):
         'stats': stats,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
+        'priority_choices': Task.PRIORITY_CHOICES,
     })
 
 
