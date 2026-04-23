@@ -13,5 +13,4 @@ urlpatterns = [
     path('organizations/<uuid:pk>/hours/', views.org_hours_overview, name='org_hours_overview'),
     path('organizations/<uuid:pk>/hours/export/', views.org_hours_export, name='org_hours_export'),
     path('organizations/<uuid:pk>/hours/monthly/', views.org_hours_monthly, name='org_hours_monthly'),
-    path('search/', views.global_search, name='global_search'),
 ]

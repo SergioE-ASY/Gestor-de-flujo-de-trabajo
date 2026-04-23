@@ -66,7 +66,8 @@ def project_detail(request, pk, project=None, membership=None):
     stats = project.get_task_stats()
     hour_stats = project.get_hour_stats()
 
-    from tasks.models import Task, TimeLog
+    from tasks.models import Task
+    from tasks.models import TimeLog
     from django.db.models import Sum
 
     tasks_by_status = {}
@@ -77,30 +78,21 @@ def project_detail(request, pk, project=None, membership=None):
                           .select_related('assignee', 'sprint').prefetch_related('tags').order_by('position'),
         }
 
-    hours_by_task = [
-        {
-            'task__id': r['task__id'],
-            'task__title': r['task__title'],
-            'task__project_sequence': r['task__project_sequence'],
-            'task__status': r['task__status'],
-            'task__estimated_hours': round(r['task__estimated_min'] / 60, 2) if r['task__estimated_min'] else None,
-            'logged': round(r['logged_min'] / 60, 2),
-        }
-        for r in TimeLog.objects
+    hours_by_task = (
+        TimeLog.objects
         .filter(project=project)
-        .values('task__id', 'task__title', 'task__project_sequence', 'task__status', 'task__estimated_min')
-        .annotate(logged_min=Sum('minutes'))
-        .order_by('-logged_min')
-    ]
+        .values('task__id', 'task__title', 'task__project_sequence', 'task__status', 'task__estimated_hours')
+        .annotate(logged=Sum('hours'))
+        .order_by('-logged')
+    )
 
-    hours_by_member = [
-        {**r, 'logged': round(r['logged_min'] / 60, 2)}
-        for r in TimeLog.objects
+    hours_by_member = (
+        TimeLog.objects
         .filter(project=project)
         .values('user__id', 'user__name', 'user__avatar')
-        .annotate(logged_min=Sum('minutes'))
-        .order_by('-logged_min')
-    ]
+        .annotate(logged=Sum('hours'))
+        .order_by('-logged')
+    )
 
     return render(request, 'projects/project_detail.html', {
         'project': project,
@@ -108,13 +100,13 @@ def project_detail(request, pk, project=None, membership=None):
         'sprints': sprints,
         'members': members,
         'tags': tags,
+        'priority_choices': Task.PRIORITY_CHOICES,
         'stats': stats,
         'hour_stats': hour_stats,
         'hours_by_task': hours_by_task,
         'hours_by_member': hours_by_member,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
-        'priority_choices': Task.PRIORITY_CHOICES,
     })
 
 
@@ -213,17 +205,15 @@ def member_hour_history(request, pk, user_pk, project=None, membership=None):
         .order_by('-logged_date', '-task__project_sequence')
     )
 
-    total_min = logs.aggregate(total=Sum('minutes'))['total'] or 0
-    total_hours = round(total_min / 60, 2)
-
-    by_task = [
-        {**r, 'total': round(r['total_min'] / 60, 2)}
-        for r in TimeLog.objects
+    by_task = (
+        TimeLog.objects
         .filter(project=project, user=target_user)
         .values('task__id', 'task__title', 'task__project_sequence', 'task__status')
-        .annotate(total_min=Sum('minutes'))
-        .order_by('-total_min')
-    ]
+        .annotate(total=Sum('hours'))
+        .order_by('-total')
+    )
+
+    total_hours = logs.aggregate(total=Sum('hours'))['total'] or 0
 
     return render(request, 'projects/member_hour_history.html', {
         'project': project,

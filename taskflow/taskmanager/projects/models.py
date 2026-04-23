@@ -50,11 +50,10 @@ class Project(models.Model):
 
     def get_hour_stats(self):
         from django.db.models import Sum
-        consumed_min = self.time_logs.aggregate(total=Sum('minutes'))['total'] or 0
-        consumed = round(consumed_min / 60, 2)
+        consumed = self.time_logs.aggregate(total=Sum('hours'))['total'] or 0
         if self.hour_budget:
-            remaining = float(self.hour_budget) - consumed
-            pct = min(round(consumed / float(self.hour_budget) * 100), 100)
+            remaining = self.hour_budget - consumed
+            pct = min(round(float(consumed) / float(self.hour_budget) * 100), 100)
         else:
             remaining = None
             pct = 0

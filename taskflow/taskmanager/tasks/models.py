@@ -44,11 +44,6 @@ class Task(models.Model):
     project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='tasks')
     sprint = models.ForeignKey('projects.Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
-    assignees = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='tasks_assigned', db_table='task_assignee')
-    task_responsible = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='responsible_tasks',
-    )
     parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subtasks')
     project_sequence = models.PositiveIntegerField(default=0)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
@@ -57,8 +52,11 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='backlog')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     position = models.IntegerField(default=0)
-    estimated_min = models.IntegerField(null=True, blank=True, help_text='Estimación en minutos')
     estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    task_responsible = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='responsible_tasks',
+    )
     hours_validated = models.BooleanField(default=False)
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -85,8 +83,10 @@ class Task(models.Model):
             self.completed_at = None
         super().save(*args, **kwargs)
 
-    def get_total_logged_minutes(self):
-        return sum(t.minutes for t in self.time_logs.all())
+    def get_total_logged_hours(self):
+        from django.db.models import Sum
+        result = self.time_logs.aggregate(total=Sum('hours'))['total']
+        return result or 0
 
     def is_overdue(self):
         if self.due_date and self.status != 'done':
@@ -141,7 +141,7 @@ class TimeLog(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='time_logs')
     project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='time_logs')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='time_logs')
-    minutes = models.PositiveIntegerField()
+    hours = models.DecimalField(max_digits=6, decimal_places=2)
     note = models.TextField(blank=True)
     logged_date = models.DateField(default=timezone.now)
 
@@ -150,10 +150,10 @@ class TimeLog(models.Model):
         ordering = ['-logged_date']
 
     def __str__(self):
-        return f'{self.minutes} min — {self.task}'
+        return f'{self.hours}h — {self.task}'
 
     @property
     def hours_display(self):
-        h = self.minutes // 60
-        m = self.minutes % 60
-        return f'{h}h {m}m' if h else f'{m}m'
+        h = int(self.hours)
+        m = round((self.hours - h) * 60)
+        return f'{h}h {m}m' if m else f'{h}h'
