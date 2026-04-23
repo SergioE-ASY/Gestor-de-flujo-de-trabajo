@@ -45,6 +45,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    description = models.TextField(blank=True, default='')
+    company_role = models.CharField(max_length=100, blank=True, default='')
+    hours_pool = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_premium = models.BooleanField(default=False)
@@ -65,6 +68,24 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f'{self.name} ({self.email})'
+
+    def get_online_status(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        last = (
+            UserSession.objects.filter(user=self)
+            .order_by('-last_seen')
+            .values_list('last_seen', flat=True)
+            .first()
+        )
+        if last is None:
+            return 'offline'
+        delta = timezone.now() - last
+        if delta < timedelta(minutes=5):
+            return 'online'
+        if delta < timedelta(minutes=30):
+            return 'away'
+        return 'offline'
 
     def get_initials(self):
         parts = self.name.split()

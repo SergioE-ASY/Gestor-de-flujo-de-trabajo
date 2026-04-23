@@ -1,12 +1,17 @@
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
+from django.utils import timezone
 from .models import Organization, OrganizationUser
 from .permissions import can_manage_members, can_assign_role, is_last_owner
 from shared.decorators import require_org_member, org_permission
 from projects.models import Project
+
+NAME_CHANGE_DAYS = 90
 
 User = get_user_model()
 
@@ -60,19 +65,48 @@ def org_create(request):
 @login_required
 @org_permission(can_manage_members)
 def org_edit(request, pk, org=None, org_membership=None):
+    now = timezone.now()
+    name_locked = False
+    name_days_remaining = 0
+
+    if org.name_changed_at:
+        delta = now - org.name_changed_at
+        if delta < timedelta(days=NAME_CHANGE_DAYS):
+            name_locked = True
+            name_days_remaining = NAME_CHANGE_DAYS - delta.days
+
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
-        if not name:
+        new_name = request.POST.get('name', '').strip()
+        if not new_name:
             messages.error(request, 'El nombre es obligatorio.')
         else:
-            org.name = name
-            org.crm_company_id = request.POST.get('crm_company_id', '')
-            if 'logo' in request.FILES:
-                org.logo = request.FILES['logo']
-            org.save()
-            messages.success(request, f'Organización "{org.name}" actualizada.')
-            return redirect('org_detail', pk=org.pk)
-    return render(request, 'organizations/org_form.html', {'title': 'Editar Organización', 'org': org})
+            name_changed = new_name != org.name
+            if name_changed and name_locked:
+                messages.error(
+                    request,
+                    f'El nombre de la organización solo se puede cambiar una vez cada {NAME_CHANGE_DAYS} días. '
+                    f'Podrás cambiarlo en {name_days_remaining} día{"s" if name_days_remaining != 1 else ""}.'
+                )
+            else:
+                update_fields = ['crm_company_id', 'updated_at']
+                org.crm_company_id = request.POST.get('crm_company_id', '')
+                if 'logo' in request.FILES:
+                    org.logo = request.FILES['logo']
+                    update_fields.append('logo')
+                if name_changed:
+                    org.name = new_name
+                    org.name_changed_at = now
+                    update_fields += ['name', 'name_changed_at']
+                org.save(update_fields=update_fields)
+                messages.success(request, f'Organización "{org.name}" actualizada.')
+                return redirect('org_detail', pk=org.pk)
+
+    return render(request, 'organizations/org_form.html', {
+        'title': 'Editar Organización',
+        'org': org,
+        'name_locked': name_locked,
+        'name_days_remaining': name_days_remaining,
+    })
 
 
 @login_required
@@ -136,6 +170,22 @@ def org_member_update(request, pk, member_pk, org=None, org_membership=None):
             member.role = role
             member.save()
             messages.success(request, f'Rol de {member.user.name} actualizado.')
+    return redirect('org_detail', pk=pk)
+
+
+@login_required
+@org_permission(can_manage_members)
+def org_rename_project(request, pk, project_pk, org=None, org_membership=None):
+    from django.views.decorators.http import require_POST as _require_post
+    project = get_object_or_404(Project, pk=project_pk, organization=org, deleted_at__isnull=True)
+    if request.method == 'POST':
+        new_name = request.POST.get('name', '').strip()
+        if not new_name:
+            messages.error(request, 'El nombre del proyecto no puede estar vacío.')
+        else:
+            project.name = new_name
+            project.save(update_fields=['name', 'updated_at'])
+            messages.success(request, f'Proyecto renombrado a "{new_name}".')
     return redirect('org_detail', pk=pk)
 
 

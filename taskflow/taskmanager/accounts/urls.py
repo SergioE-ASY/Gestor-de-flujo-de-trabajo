@@ -13,4 +13,5 @@ urlpatterns = [
     path('profile/sessions/revoke-all/', views.session_revoke_all, name='session_revoke_all'),
     path('pricing/', views.pricing_view, name='pricing'),
     path('set-theme/', views.set_theme_view, name='set_theme'),
+    path('users/<uuid:pk>/', views.user_profile_view, name='user_profile'),
 ]

@@ -154,7 +154,7 @@ def profile_view(request):
     form = ProfileForm(request.POST or None, request.FILES or None, instance=request.user)
     if request.method == 'POST' and form.is_valid():
         instance = form.save(commit=False)
-        instance.save(update_fields=['name', 'email', 'avatar'])
+        instance.save(update_fields=['name', 'email', 'avatar', 'company_role', 'description', 'hours_pool'])
         messages.success(request, 'Perfil actualizado correctamente.')
         return redirect('profile')
 
@@ -219,6 +219,63 @@ def profile_view(request):
         'total_hours': total_hours,
         'task_counts': task_counts,
         'activity_by_org': activity_by_org,
+    })
+
+
+@login_required
+def user_profile_view(request, pk):
+    from django.db.models import Sum, Count, Q
+    from tasks.models import Task, TimeLog
+    from organizations.models import OrganizationUser
+
+    profile_user = get_object_or_404(User, pk=pk, is_active=True)
+
+    total_hours = (
+        TimeLog.objects.filter(user=profile_user)
+        .aggregate(total=Sum('hours'))['total'] or 0
+    )
+    task_counts = Task.objects.filter(assignee=profile_user).aggregate(
+        done=Count('id', filter=Q(status='done')),
+        in_progress=Count('id', filter=Q(status='in_progress')),
+        in_review=Count('id', filter=Q(status='in_review')),
+        total=Count('id'),
+    )
+
+    from projects.models import ProjectMember
+
+    # All orgs the profile user belongs to
+    memberships = (
+        OrganizationUser.objects.filter(user=profile_user)
+        .select_related('organization')
+        .order_by('organization__name')
+    )
+    total_org_count = memberships.count()
+    total_project_count = ProjectMember.objects.filter(user=profile_user).count()
+
+    # Only show orgs shared with the viewer
+    viewer_org_ids = set(
+        OrganizationUser.objects.filter(user=request.user)
+        .values_list('organization_id', flat=True)
+    )
+    shared_memberships = [m for m in memberships if m.organization_id in viewer_org_ids]
+
+    hours_used = float(total_hours)
+    hours_pool = float(profile_user.hours_pool) if profile_user.hours_pool else None
+    hours_remaining = round(hours_pool - hours_used, 2) if hours_pool is not None else None
+    hours_pct = min(round(hours_used / hours_pool * 100) if hours_pool else 0, 100)
+
+    return render(request, 'accounts/user_profile.html', {
+        'profile_user': profile_user,
+        'total_hours': total_hours,
+        'task_counts': task_counts,
+        'shared_memberships': shared_memberships,
+        'total_org_count': total_org_count,
+        'total_project_count': total_project_count,
+        'hours_pool': hours_pool,
+        'hours_used': hours_used,
+        'hours_remaining': hours_remaining,
+        'hours_pct': hours_pct,
+        'is_own_profile': profile_user == request.user,
     })
 
 

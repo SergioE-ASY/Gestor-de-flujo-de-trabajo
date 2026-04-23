@@ -57,13 +57,13 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           <div>
             <div style="font-size:0.88rem;font-weight:600;color:var(--success);">Estimación validada</div>
-            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h aprobadas por {{ task.task_responsible.name }}</div>
+            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h aprobadas por <a href="{% url 'user_profile' task.task_responsible.pk %}" style="color:inherit;text-decoration:underline;">{{ task.task_responsible.name }}</a></div>
           </div>
           {% else %}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <div>
             <div style="font-size:0.88rem;font-weight:600;color:var(--warning);">Estimación pendiente de validación</div>
-            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h · esperando aprobación de {% if task.task_responsible %}{{ task.task_responsible.name }}{% else %}un responsable{% endif %}</div>
+            <div class="text-muted text-sm">{{ task.estimated_hours|floatformat:"-2" }}h · esperando aprobación de {% if task.task_responsible %}<a href="{% url 'user_profile' task.task_responsible.pk %}" style="color:inherit;text-decoration:underline;">{{ task.task_responsible.name }}</a>{% else %}un responsable{% endif %}</div>
           </div>
           {% endif %}
         </div>
@@ -142,7 +142,7 @@
           </div>
           <div class="comment-body" style="flex:1;">
             <div class="comment-meta">
-              <strong style="color:var(--text);">{{ comment.user.name }}</strong>
+              <a href="{% url 'user_profile' comment.user.pk %}" style="font-weight:600;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ comment.user.name }}</a>
               · {{ comment.created_at|date:"d M Y, H:i" }}
               {% if comment.user == request.user %}
               <form method="post" action="{% url 'comment_delete' project.pk task.pk comment.pk %}" style="display:inline;float:right;" onsubmit="return confirm('¿Eliminar comentario?')">
@@ -183,7 +183,7 @@
           <span style="font-size:1.2rem;">📎</span>
           <div style="flex:1;min-width:0;">
             <a href="{{ att.file.url }}" target="_blank" style="font-size:0.875rem;font-weight:500;">{{ att.filename }}</a>
-            <div class="text-muted text-sm">{{ att.uploaded_by.name }} · {{ att.uploaded_at|date:"d M Y" }}</div>
+            <div class="text-muted text-sm"><a href="{% url 'user_profile' att.uploaded_by.pk %}" style="color:inherit;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ att.uploaded_by.name }}</a> · {{ att.uploaded_at|date:"d M Y" }}</div>
           </div>
         </div>
         {% endfor %}
@@ -208,10 +208,10 @@
         <div>
           <div class="text-muted text-sm" style="margin-bottom:3px;">Asignado a</div>
           {% if task.assignee %}
-          <div style="display:flex;align-items:center;gap:8px;">
+          <a href="{% url 'user_profile' task.assignee.pk %}" style="display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
             <div class="avatar avatar-sm">{% if task.assignee.avatar %}<img src="{{ task.assignee.avatar.url }}" alt="">{% else %}{{ task.assignee.get_initials }}{% endif %}</div>
             {{ task.assignee.name }}
-          </div>
+          </a>
           {% else %}<span class="text-muted">Sin asignar</span>{% endif %}
         </div>
         <div>
@@ -231,12 +231,12 @@
         {% if task.task_responsible %}
         <div>
           <div class="text-muted text-sm" style="margin-bottom:3px;">Responsable</div>
-          <div style="display:flex;align-items:center;gap:6px;">
+          <a href="{% url 'user_profile' task.task_responsible.pk %}" style="display:flex;align-items:center;gap:6px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
             <div class="avatar avatar-sm">
               {% if task.task_responsible.avatar %}<img src="{{ task.task_responsible.avatar.url }}" alt="">{% else %}{{ task.task_responsible.get_initials }}{% endif %}
             </div>
             <span style="font-size:0.88rem;">{{ task.task_responsible.name }}</span>
-          </div>
+          </a>
         </div>
         {% endif %}
         {% if task.parent_task %}

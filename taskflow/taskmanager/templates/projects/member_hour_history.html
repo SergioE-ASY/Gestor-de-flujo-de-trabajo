@@ -18,7 +18,7 @@ Horas de {{ target_user.name }}
         {% if target_user.avatar %}<img src="{{ target_user.avatar.url }}" alt="">{% else %}{{ target_user.get_initials }}{% endif %}
       </div>
       <div>
-        <div style="font-size:1.1rem;font-weight:700;">{{ target_user.name }}</div>
+        <a href="{% url 'user_profile' target_user.pk %}" style="font-size:1.1rem;font-weight:700;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ target_user.name }}</a>
         <div class="text-muted text-sm">{{ target_user.email }}</div>
       </div>
     </div>
