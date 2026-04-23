@@ -24,7 +24,7 @@
       <span class="badge badge-{{ project.priority }}">{{ project.get_priority_display }}</span>
     </div>
     {% if project.description %}
-    <p class="text-muted" style="font-size:0.875rem;max-width:600px;">{{ project.description }}</p>
+    <div class="text-muted md-content" data-render-markdown="true" style="font-size:0.875rem;max-width:600px;">{{ project.description }}</div>
     {% endif %}
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
