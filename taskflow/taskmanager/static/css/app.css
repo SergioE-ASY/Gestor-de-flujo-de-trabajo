@@ -835,3 +835,17 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
 .flt-divider { height:1px; background:var(--border); margin:4px 0; }
 .board-col-empty-msg { display:none; padding:20px 8px; text-align:center; color:var(--text-muted); font-size:0.78rem; }
 
+
+/* ── Online status indicator ─────────────────────────────────────────────── */
+.status-dot {
+  width:10px; height:10px; border-radius:50%; flex-shrink:0;
+  border:2px solid var(--bg2);
+}
+.status-dot.online  { background:#22c55e; }
+.status-dot.away    { background:#f59e0b; }
+.status-dot.offline { background:#6b7280; }
+.avatar-wrapper { position:relative; display:inline-flex; flex-shrink:0; }
+.avatar-wrapper .status-dot {
+  position:absolute; bottom:0; right:0;
+  border-color:var(--bg2);
+}

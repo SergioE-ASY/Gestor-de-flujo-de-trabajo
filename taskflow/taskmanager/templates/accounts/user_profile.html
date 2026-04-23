@@ -14,15 +14,27 @@
   <!-- Header card -->
   <div class="card" style="margin-bottom:20px;">
     <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
-      <div class="avatar" style="width:72px;height:72px;font-size:1.6rem;border-radius:16px;flex-shrink:0;">
-        {% if profile_user.avatar %}<img src="{{ profile_user.avatar.url }}" alt="">{% else %}{{ profile_user.get_initials }}{% endif %}
+      {% with status=profile_user.get_online_status %}
+      <div class="avatar-wrapper">
+        <div class="avatar" style="width:72px;height:72px;font-size:1.6rem;border-radius:16px;">
+          {% if profile_user.avatar %}<img src="{{ profile_user.avatar.url }}" alt="">{% else %}{{ profile_user.get_initials }}{% endif %}
+        </div>
+        <span class="status-dot {{ status }}" style="width:14px;height:14px;bottom:2px;right:2px;"></span>
       </div>
+      {% endwith %}
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
           <h1 style="font-size:1.25rem;font-weight:700;margin:0;">{{ profile_user.name }}</h1>
           {% if profile_user.is_premium %}
           <span style="font-size:0.65rem;font-weight:700;background:linear-gradient(135deg,#f472b6,#a78bfa);color:#fff;padding:2px 8px;border-radius:10px;letter-spacing:0.04em;">PREMIUM</span>
           {% endif %}
+          {% with status=profile_user.get_online_status %}
+          <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:500;
+            {% if status == 'online' %}color:#22c55e;{% elif status == 'away' %}color:#f59e0b;{% else %}color:#6b7280;{% endif %}">
+            <span class="status-dot {{ status }}" style="width:7px;height:7px;border:none;"></span>
+            {% if status == 'online' %}En línea{% elif status == 'away' %}Ausente{% else %}Desconectado{% endif %}
+          </span>
+          {% endwith %}
         </div>
         {% if profile_user.company_role %}
         <div style="font-size:0.9rem;font-weight:500;color:var(--text-muted);margin-bottom:4px;">{{ profile_user.company_role }}</div>

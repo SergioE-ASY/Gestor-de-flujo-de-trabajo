@@ -472,7 +472,10 @@
         <tr>
           <td>
             <a href="{% url 'user_profile' mem.user.pk %}" style="display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-              <div class="avatar avatar-sm">{% if mem.user.avatar %}<img src="{{ mem.user.avatar.url }}" alt="">{% else %}{{ mem.user.get_initials }}{% endif %}</div>
+              <div class="avatar-wrapper">
+                <div class="avatar avatar-sm">{% if mem.user.avatar %}<img src="{{ mem.user.avatar.url }}" alt="">{% else %}{{ mem.user.get_initials }}{% endif %}</div>
+                <span class="status-dot {{ mem.user.get_online_status }}" style="width:8px;height:8px;"></span>
+              </div>
               {{ mem.user.name }}
             </a>
           </td>

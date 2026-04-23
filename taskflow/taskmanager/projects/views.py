@@ -17,6 +17,17 @@ User = get_user_model()
 
 
 @login_required
+def project_list(request):
+    memberships = (
+        ProjectMember.objects
+        .filter(user=request.user, project__deleted_at__isnull=True)
+        .select_related('project', 'project__organization')
+        .order_by('project__organization__name', 'project__name')
+    )
+    return render(request, 'projects/project_list.html', {'memberships': memberships})
+
+
+@login_required
 def project_create(request):
     user_orgs = OrganizationUser.objects.filter(user=request.user).select_related('organization')
 

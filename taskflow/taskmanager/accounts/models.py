@@ -69,6 +69,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f'{self.name} ({self.email})'
 
+    def get_online_status(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        last = (
+            UserSession.objects.filter(user=self)
+            .order_by('-last_seen')
+            .values_list('last_seen', flat=True)
+            .first()
+        )
+        if last is None:
+            return 'offline'
+        delta = timezone.now() - last
+        if delta < timedelta(minutes=5):
+            return 'online'
+        if delta < timedelta(minutes=30):
+            return 'away'
+        return 'offline'
+
     def get_initials(self):
         parts = self.name.split()
         if len(parts) >= 2:
