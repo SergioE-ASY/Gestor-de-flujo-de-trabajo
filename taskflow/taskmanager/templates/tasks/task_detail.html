@@ -151,7 +151,7 @@
               </form>
               {% endif %}
             </div>
-            <div class="comment-content">{{ comment.content }}</div>
+            <div class="comment-content md-content" data-render-markdown="true">{{ comment.content }}</div>
           </div>
         </div>
         {% endfor %}
@@ -164,7 +164,7 @@
             {% if request.user.avatar %}<img src="{{ request.user.avatar.url }}" alt="">{% else %}{{ request.user.get_initials }}{% endif %}
           </div>
           <div style="flex:1;">
-            <textarea name="content" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+            <textarea name="content" class="form-control" data-md-editor="true" rows="3" placeholder="Escribe un comentario..." required></textarea>
             <button type="submit" class="btn btn-primary btn-sm" style="margin-top:8px;">Comentar</button>
           </div>
         </div>

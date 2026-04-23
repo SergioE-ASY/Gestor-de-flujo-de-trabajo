@@ -191,3 +191,67 @@ document.addEventListener('click', e => {
     }
   }
 });
+
+// ─── Markdown editor sync ───
+function initMarkdownEditors() {
+  if (typeof EasyMDE === 'undefined') return;
+
+  document.querySelectorAll('textarea[data-md-editor="true"]').forEach(textarea => {
+    if (textarea.dataset.mdReady === 'true') return;
+
+    const editor = new EasyMDE({
+      element: textarea,
+      spellChecker: false,
+      status: false,
+      autoDownloadFontAwesome: true,
+      forceSync: true,
+      minHeight: textarea.rows && textarea.rows > 3 ? '120px' : '90px',
+      toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'image', 'table', '|', 'preview', 'side-by-side', 'guide'],
+    });
+
+    const codemirror = editor.codemirror;
+    const syncToTextarea = () => {
+      textarea.value = editor.value();
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    codemirror.on('change', syncToTextarea);
+
+    textarea.addEventListener('input', () => {
+      const currentValue = editor.value();
+      if (textarea.value !== currentValue) {
+        editor.value(textarea.value || '');
+      }
+    });
+
+    if (textarea.form) {
+      textarea.form.addEventListener('reset', () => {
+        setTimeout(() => editor.value(textarea.defaultValue || ''), 0);
+      });
+    }
+
+    textarea.dataset.mdReady = 'true';
+  });
+}
+
+initMarkdownEditors();
+
+function renderMarkdownBlocks() {
+  if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return;
+
+  document.querySelectorAll('[data-render-markdown="true"]').forEach(el => {
+    if (el.dataset.mdRendered === 'true') return;
+    const source = el.textContent || '';
+    if (!source.trim()) {
+      el.dataset.mdRendered = 'true';
+      return;
+    }
+
+    const rendered = marked.parse(source, { gfm: true, breaks: true });
+    el.innerHTML = DOMPurify.sanitize(rendered);
+    el.dataset.mdRendered = 'true';
+  });
+}
+
+renderMarkdownBlocks();
