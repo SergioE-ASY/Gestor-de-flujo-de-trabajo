@@ -84,7 +84,7 @@ def task_create(request, project_pk, project=None, membership=None):
 @require_project_member(pk_kwarg='project_pk')
 def task_detail(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)
-    comments = task.comments.select_related('user').all()
+    comments = task.comments.filter(deleted_at__isnull=True).select_related('user').all()
     attachments = task.attachments.select_related('uploaded_by').all()
     time_logs = task.time_logs.select_related('user').all()
     subtasks = task.subtasks.select_related('assignee').all()
@@ -222,7 +222,8 @@ def comment_delete(request, project_pk, task_pk, pk, project=None, membership=No
     if not can_delete_comment(request.user, comment):
         messages.error(request, 'Solo puedes eliminar tus propios comentarios.')
         return redirect('task_detail', project_pk=project_pk, pk=task_pk)
-    comment.delete()
+    comment.deleted_at = timezone.now()
+    comment.save()
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
 
