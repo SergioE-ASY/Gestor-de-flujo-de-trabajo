@@ -90,6 +90,17 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Responsable de validación de horas</label>
+        <select name="task_responsible" class="form-control">
+          <option value="">Sin responsable</option>
+          {% for mem in members %}
+          <option value="{{ mem.user.pk }}" {% if task.task_responsible_id == mem.user.pk %}selected{% endif %}>{{ mem.user.name }}</option>
+          {% endfor %}
+        </select>
+        <span class="text-muted text-sm">Esta persona deberá aprobar la estimación de horas.</span>
+      </div>
+
       {% if parent_tasks %}
       <div class="form-group">
         <label class="form-label">Tarea padre (subtarea de)</label>

@@ -45,6 +45,10 @@ class Task(models.Model):
     sprint = models.ForeignKey('projects.Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
     assignees = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='tasks_assigned', db_table='task_assignee')
+    task_responsible = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='responsible_tasks',
+    )
     parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subtasks')
     project_sequence = models.PositiveIntegerField(default=0)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
@@ -54,6 +58,8 @@ class Task(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     position = models.IntegerField(default=0)
     estimated_min = models.IntegerField(null=True, blank=True, help_text='Estimación en minutos')
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    hours_validated = models.BooleanField(default=False)
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
