@@ -621,14 +621,30 @@ select.form-control { cursor: pointer; }
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
 /* ─── Comment ─── */
+.task-detail-layout { grid-template-columns: minmax(0, 1fr) 320px; }
 .comment-list { display: flex; flex-direction: column; gap: 16px; }
-.comment-item { display: flex; gap: 10px; }
-.comment-body { flex: 1; background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; }
+.comment-item { display: flex; gap: 10px; min-width: 0; }
+.comment-body { flex: 1; min-width: 0; background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; }
 .comment-meta { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px; }
-.comment-content { font-size: 0.875rem; line-height: 1.6; }
+.comment-content { font-size: 0.875rem; line-height: 1.6; max-width: 100%; overflow-x: hidden; }
+.md-content { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.md-content > * { max-width: 100%; }
 .md-content p { margin: 0 0 8px; }
 .md-content p:last-child { margin-bottom: 0; }
 .md-content ul, .md-content ol { margin: 0 0 8px 18px; }
+.md-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.md-content th, .md-content td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  white-space: normal;
+  word-break: break-word;
+}
 .md-content blockquote {
   margin: 0 0 8px;
   padding-left: 10px;
@@ -641,12 +657,14 @@ select.form-control { cursor: pointer; }
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg2);
+  max-width: 100%;
   overflow-x: auto;
 }
 .md-content code {
   font-family: var(--font-mono);
   font-size: 0.8rem;
 }
+.md-content img { max-width: 100%; height: auto; }
 
 /* ─── Notification badge ─── */
 .notif-bubble {
@@ -713,6 +731,11 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
     z-index: 100;
   }
   .topbar-actions.open { display: flex; }
+  .task-detail-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1100px) {
+  .task-detail-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 930px) {
