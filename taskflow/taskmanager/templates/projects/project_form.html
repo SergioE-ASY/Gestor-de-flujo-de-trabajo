@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width:640px;">
+<div style="max-width:640px;margin:40px auto 0;">
   <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">{{ title }}</h2>
   <div class="card">
     <form method="post">
@@ -39,7 +39,7 @@
 
       <div class="form-group">
         <label class="form-label">Descripción</label>
-        <textarea name="description" class="form-control" rows="3" placeholder="¿De qué trata este proyecto?">{{ project.description|default:'' }}</textarea>
+        <textarea name="description" class="form-control" data-md-editor="true" rows="3" placeholder="¿De qué trata este proyecto?">{{ project.description|default:'' }}</textarea>
       </div>
 
       <div class="form-row">
