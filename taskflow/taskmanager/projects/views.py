@@ -100,6 +100,7 @@ def project_detail(request, pk, project=None, membership=None):
         'sprints': sprints,
         'members': members,
         'tags': tags,
+        'priority_choices': Task.PRIORITY_CHOICES,
         'stats': stats,
         'hour_stats': hour_stats,
         'hours_by_task': hours_by_task,
