@@ -59,38 +59,102 @@
   {% endif %}
 </div>
 
-<!-- Bolsa de horas -->
-{% if hour_stats.budget %}
-<div style="margin-bottom:20px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-    <span style="font-size:0.85rem;font-weight:600;">Bolsa de horas</span>
-    <div style="display:flex;gap:16px;font-size:0.82rem;">
-      <span style="color:var(--text-muted);">Presupuesto: <strong style="color:var(--text);">{{ hour_stats.budget }}h</strong></span>
-      <span style="color:var(--text-muted);">Consumidas: <strong style="color:var(--text);">{{ hour_stats.consumed }}h</strong></span>
-      <span style="color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
-        Restantes: <strong>{% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h (excedido){% endif %}</strong>
-      </span>
-    </div>
-  </div>
-  <div class="progress">
-    <div class="progress-bar {% if hour_stats.pct >= 100 %}danger{% elif hour_stats.pct >= 80 %}warning{% else %}success{% endif %}"
-      style="width:{{ hour_stats.pct }}%"></div>
-  </div>
-</div>
-{% endif %}
-
 <!-- Tabs -->
 <div class="tabs">
   <a href="#board" class="tab active" onclick="showTab('board', this)">Tablero</a>
   <a href="#list" class="tab" onclick="showTab('list', this)">Lista</a>
   <a href="#sprints" class="tab" onclick="showTab('sprints', this)">Sprints</a>
-  <a href="#hours" class="tab" onclick="showTab('hours', this)">Horas</a>
   <a href="#members" class="tab" onclick="showTab('members', this)">Miembros</a>
   <a href="#tags" class="tab" onclick="showTab('tags', this)">Etiquetas</a>
+  <a href="#hours" class="tab" onclick="showTab('hours', this)">Horas</a>
 </div>
 
 <!-- Board Tab -->
 <div id="tab-board">
+
+  <!-- Inline filter row -->
+  <div class="flt-row">
+
+    <!-- Asignado -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-assignee">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span class="flt-label">Asignado</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-assignee">
+        <button class="flt-opt selected" data-filter="assignee" data-value="" data-label="Asignado">Todos</button>
+        <div class="flt-sep"></div>
+        <button class="flt-opt" data-filter="assignee" data-value="__none__" data-label="Sin asignar">Sin asignar</button>
+        {% for mem in members %}
+        <button class="flt-opt" data-filter="assignee" data-value="{{ mem.user.pk }}" data-label="{{ mem.user.name }}">{{ mem.user.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Prioridad -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-priority">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="flt-label">Prioridad</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-priority">
+        {% for value, label in priority_choices %}
+        <button class="flt-opt" data-filter="priority" data-value="{{ value }}" data-label="{{ label }}">
+          <span class="flt-check"></span>{{ label }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if sprints %}
+    <!-- Sprint -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-sprint">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="flt-label">Sprint</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-sprint">
+        <button class="flt-opt selected" data-filter="sprint" data-value="" data-label="Sprint">Todos</button>
+        <div class="flt-sep"></div>
+        <button class="flt-opt" data-filter="sprint" data-value="__none__" data-label="Sin sprint">Sin sprint</button>
+        {% for sprint in sprints %}
+        <button class="flt-opt" data-filter="sprint" data-value="{{ sprint.pk }}" data-label="{{ sprint.name }}">{{ sprint.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if tags %}
+    <!-- Etiqueta -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-tag">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="flt-label">Etiqueta</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-tag">
+        {% for tag in tags %}
+        <button class="flt-opt" data-filter="tag" data-value="{{ tag.pk }}" data-label="{{ tag.name }}">
+          <span class="flt-check"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ tag.color }};flex-shrink:0;"></span>
+          {{ tag.name }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Limpiar (solo visible cuando hay filtros activos) -->
+    <button id="filter-clear" class="btn btn-ghost btn-sm" style="display:none;gap:5px;margin-left:2px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Limpiar
+    </button>
+
+  </div>
+
   <div class="board">
     {% for status_key, status_data in tasks_by_status.items %}
     <div class="board-col">
@@ -102,12 +166,19 @@
         {% for task in status_data.tasks %}
         <div class="task-card {% if task.is_overdue %}task-card-overdue{% endif %}"
              draggable="true" data-task-id="{{ task.pk }}"
-             onclick="window.location='{% url 'task_detail' project.pk task.pk %}'">
+             data-detail-url="{% url 'task_detail' project.pk task.pk %}"
+             data-assignee="{{ task.assignee_id|default:'' }}"
+             data-sprint="{{ task.sprint_id|default:'' }}"
+             data-priority="{{ task.priority }}"
+             data-tags="{% for tag in task.tags.all %}{{ tag.pk }}{% if not forloop.last %},{% endif %}{% endfor %}"
+             onclick="handleCardClick(event, this)">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <span class="badge badge-{{ task.type }}" style="font-size:0.65rem;">{{ task.get_type_display }}</span>
             <span class="badge badge-{{ task.priority }}" style="font-size:0.65rem;">{{ task.get_priority_display }}</span>
           </div>
-          <div class="task-card-title">{{ task.title }}</div>
+          <div class="task-card-title"
+               title="Doble clic para editar"
+               ondblclick="startInlineTitleEdit(event, this, '{% url 'task_update_title' project.pk task.pk %}')">{{ task.title }}</div>
           <div class="task-card-meta">
             <span class="task-key">{{ project.key }}-{{ task.project_sequence }}</span>
             <div style="display:flex;align-items:center;gap:6px;">
@@ -133,6 +204,7 @@
           </div>
         </div>
         {% endfor %}
+        <div class="board-col-empty-msg">Sin tareas con estos filtros</div>
         <a href="{% url 'task_create' project.pk %}?status={{ status_key }}" style="display:flex;align-items:center;gap:6px;padding:8px;color:var(--text-muted);font-size:0.8rem;border-radius:var(--radius-sm);text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
           <span>+</span> Agregar tarea
         </a>
@@ -143,45 +215,25 @@
 </div>
 
 <!-- List Tab -->
-<div id="tab-list" style="display:none;">
+<div id="tab-list" style="display:none;" data-list-url="{% url 'task_list_data' project.pk %}">
   <div class="card" style="padding:0;overflow-x:auto;">
-    <table class="table">
+    <table class="table" id="list-table">
       <thead>
         <tr>
-          <th>Clave</th>
-          <th>Título</th>
-          <th>Tipo</th>
-          <th>Estado</th>
-          <th>Prioridad</th>
-          <th>Asignado a</th>
-          <th>Vence</th>
+          <th class="th-sort" data-col="key">Clave <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="title">Título <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="type">Tipo <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="status">Estado <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="priority">Prioridad <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="assignee">Asignado a <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="due_date">Vence <span class="sort-icon"></span></th>
         </tr>
       </thead>
-      <tbody>
-        {% for status_key, status_data in tasks_by_status.items %}
-        {% for task in status_data.tasks %}
-        <tr style="cursor:pointer;" onclick="window.location='{% url 'task_detail' project.pk task.pk %}'">
-          <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">{{ project.key }}-{{ task.project_sequence }}</span></td>
-          <td style="font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ task.title }}</td>
-          <td><span class="badge badge-{{ task.type }}">{{ task.get_type_display }}</span></td>
-          <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span></td>
-          <td><span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
-          <td>
-            {% if task.assignee %}
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div class="avatar avatar-sm">{% if task.assignee.avatar %}<img src="{{ task.assignee.avatar.url }}" alt="">{% else %}{{ task.assignee.get_initials }}{% endif %}</div>
-              <span class="text-sm">{{ task.assignee.name }}</span>
-            </div>
-            {% else %}<span class="text-muted text-sm">—</span>{% endif %}
-          </td>
-          <td class="{% if task.is_overdue %}text-danger{% else %}text-muted{% endif %} text-sm">
-            {{ task.due_date|date:"d M Y"|default:"—" }}
-          </td>
-        </tr>
-        {% endfor %}
-        {% endfor %}
+      <tbody id="list-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Cargando…</td></tr>
       </tbody>
     </table>
+    <div id="list-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);min-height:48px;"></div>
   </div>
 </div>
 
@@ -235,136 +287,6 @@
   {% else %}
   <div class="empty-state"><div class="empty-icon">🏃</div><h3>Sin sprints</h3><p>Crea sprints para organizar el trabajo del equipo.</p></div>
   {% endif %}
-</div>
-
-<!-- Hours Tab -->
-<div id="tab-hours" style="display:none;">
-
-  <!-- Resumen global -->
-  <div class="card" style="margin-bottom:16px;">
-    <div class="card-title" style="margin-bottom:16px;">Resumen de horas</div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Presupuesto</div>
-        <div style="font-size:1.4rem;font-weight:700;">{% if hour_stats.budget %}{{ hour_stats.budget }}h{% else %}—{% endif %}</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Consumidas</div>
-        <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.consumed }}h</div>
-      </div>
-      {% if hour_stats.budget %}
-      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Restantes</div>
-        <div style="font-size:1.4rem;font-weight:700;color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
-          {% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h{% endif %}
-        </div>
-      </div>
-      <div style="flex:1;min-width:120px;background:var(--bg3);border-radius:var(--radius);padding:14px 18px;">
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Uso</div>
-        <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.pct }}%</div>
-      </div>
-      {% endif %}
-    </div>
-    {% if hour_stats.budget %}
-    <div class="progress" style="height:8px;">
-      <div class="progress-bar {% if hour_stats.pct >= 100 %}danger{% elif hour_stats.pct >= 80 %}warning{% else %}success{% endif %}"
-        style="width:{{ hour_stats.pct }}%"></div>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- Desglose por miembro -->
-  <div class="card" style="margin-bottom:16px;">
-    <div class="card-title" style="margin-bottom:14px;">Por miembro</div>
-    {% if hours_by_member %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Miembro</th>
-          <th style="text-align:right;">Horas registradas</th>
-          {% if hour_stats.budget %}<th style="width:180px;">Proporción</th>{% endif %}
-          {% if membership.role in 'owner,manager' %}<th></th>{% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in hours_by_member %}
-        <tr>
-          <td>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div class="avatar avatar-sm">{{ row.user__name|slice:":1"|upper }}</div>
-              {{ row.user__name }}
-            </div>
-          </td>
-          <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
-          {% if hour_stats.budget %}
-          <td>
-            <div class="progress" style="height:6px;">
-              <div class="progress-bar" style="width:{% widthratio row.logged hour_stats.consumed 100 %}%"></div>
-            </div>
-          </td>
-          {% endif %}
-          {% if membership.role in 'owner,manager' %}
-          <td>
-            <a href="{% url 'member_hour_history' project.pk row.user__id %}" class="btn btn-ghost btn-sm">Ver detalle</a>
-          </td>
-          {% endif %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p class="text-muted text-sm">Aún no hay horas registradas.</p>
-    {% endif %}
-  </div>
-
-  <!-- Desglose por tarea -->
-  <div class="card">
-    <div class="card-title" style="margin-bottom:14px;">Por tarea</div>
-    {% if hours_by_task %}
-    <div style="overflow-x:auto;">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Tarea</th>
-            <th style="text-align:right;">Estimadas</th>
-            <th style="text-align:right;">Registradas</th>
-            <th style="width:180px;">Progreso</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in hours_by_task %}
-          <tr>
-            <td>
-              <a href="{% url 'task_detail' project.pk row.task__id %}" style="color:var(--text);">
-                <span style="color:var(--text-muted);font-size:0.8rem;">{{ project.key }}-{{ row.task__project_sequence }}</span>
-                {{ row.task__title }}
-              </a>
-            </td>
-            <td style="text-align:right;color:var(--text-muted);">
-              {% if row.task__estimated_hours %}{{ row.task__estimated_hours }}h{% else %}—{% endif %}
-            </td>
-            <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
-            <td>
-              {% if row.task__estimated_hours %}
-                {% with pct=row.logged %}
-                <div class="progress" style="height:6px;">
-                  <div class="progress-bar {% if row.logged > row.task__estimated_hours %}danger{% else %}success{% endif %}"
-                    style="width:{% widthratio row.logged row.task__estimated_hours 100 %}%{% if row.logged > row.task__estimated_hours %};max-width:100%{% endif %}"></div>
-                </div>
-                {% endwith %}
-              {% else %}
-              <span style="font-size:0.78rem;color:var(--text-muted);">Sin estimación</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="text-muted text-sm">Aún no hay horas registradas en tareas.</p>
-    {% endif %}
-  </div>
 </div>
 
 <!-- Members Tab -->
@@ -436,6 +358,146 @@
     {% endfor %}
     {% if not tags %}<span class="text-muted text-sm">Sin etiquetas aún.</span>{% endif %}
   </div>
+</div>
+
+<!-- Hours Tab -->
+<div id="tab-hours" style="display:none;">
+
+  <!-- Hour pool widget -->
+  {% if hour_stats.budget %}
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <span style="font-size:0.85rem;font-weight:600;">Bolsa de horas</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px;font-size:0.85rem;">
+      <span style="color:var(--text-muted);">Presupuesto: <strong style="color:var(--text);">{{ hour_stats.budget }}h</strong></span>
+      <span style="color:var(--text-muted);">Consumidas: <strong style="color:var(--text);">{{ hour_stats.consumed }}h</strong></span>
+      <span style="color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+        Restantes: <strong>{% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h (excedido){% endif %}</strong>
+      </span>
+    </div>
+    <div class="progress">
+      <div class="progress-bar {% if hour_stats.pct >= 100 %}danger{% elif hour_stats.pct >= 80 %}warning{% else %}success{% endif %}"
+        style="width:{{ hour_stats.pct }}%"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Summary KPIs -->
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Presupuesto</div>
+      <div style="font-size:1.4rem;font-weight:700;">{% if hour_stats.budget %}{{ hour_stats.budget }}h{% else %}—{% endif %}</div>
+    </div>
+    <div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Consumidas</div>
+      <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.consumed }}h</div>
+    </div>
+    {% if hour_stats.budget %}
+    <div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Restantes</div>
+      <div style="font-size:1.4rem;font-weight:700;color:{% if hour_stats.remaining < 0 %}var(--danger){% else %}var(--success){% endif %};">
+        {% if hour_stats.remaining >= 0 %}{{ hour_stats.remaining }}h{% else %}−{{ hour_stats.remaining|floatformat:2|slice:"1:" }}h{% endif %}
+      </div>
+    </div>
+    <div style="flex:1;min-width:130px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;">
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Uso</div>
+      <div style="font-size:1.4rem;font-weight:700;">{{ hour_stats.pct }}%</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- By member -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title" style="margin-bottom:14px;">Por miembro</div>
+    {% if hours_by_member %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Miembro</th>
+          <th style="text-align:right;">Horas registradas</th>
+          {% if hour_stats.consumed %}<th style="width:180px;">Proporción</th>{% endif %}
+          {% if membership.role in 'owner,manager' %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in hours_by_member %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="avatar avatar-sm">{{ row.user__name|slice:":1"|upper }}</div>
+              {{ row.user__name }}
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
+          {% if hour_stats.consumed %}
+          <td>
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar" style="width:{% widthratio row.logged hour_stats.consumed 100 %}%"></div>
+            </div>
+          </td>
+          {% endif %}
+          {% if membership.role in 'owner,manager' %}
+          <td>
+            <a href="{% url 'member_hour_history' project.pk row.user__id %}" class="btn btn-ghost btn-sm">Ver detalle</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay horas registradas.</p>
+    {% endif %}
+  </div>
+
+  <!-- By task -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px;">Por tarea</div>
+    {% if hours_by_task %}
+    <div style="overflow-x:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tarea</th>
+            <th>Estado</th>
+            <th style="text-align:right;">Estimado</th>
+            <th style="text-align:right;">Registrado</th>
+            <th style="width:160px;">Progreso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in hours_by_task %}
+          <tr>
+            <td>
+              <a href="{% url 'task_detail' project.pk row.task__id %}" style="color:var(--text);">
+                <span style="color:var(--text-muted);font-size:0.8rem;">{{ project.key }}-{{ row.task__project_sequence }}</span>
+                {{ row.task__title }}
+              </a>
+            </td>
+            <td><span class="badge badge-{{ row.task__status }}">{{ row.task__status }}</span></td>
+            <td style="text-align:right;color:var(--text-muted);">
+              {% if row.task__estimated_hours %}{{ row.task__estimated_hours }}h{% else %}—{% endif %}
+            </td>
+            <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
+            <td>
+              {% if row.task__estimated_hours %}
+              <div class="progress" style="height:6px;">
+                <div class="progress-bar {% if row.logged > row.task__estimated_hours %}danger{% else %}success{% endif %}"
+                  style="width:{% widthratio row.logged row.task__estimated_hours 100 %}%;{% if row.logged > row.task__estimated_hours %}max-width:100%{% endif %}"></div>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-sm">Aún no hay horas registradas en tareas.</p>
+    {% endif %}
+  </div>
+
 </div>
 
 <!-- Add member modal -->
@@ -516,5 +578,240 @@ function openEditMember(memberPk, name, currentRole) {
   document.getElementById('edit-member-form').action = '/projects/{{ project.pk }}/members/' + memberPk + '/role/';
   openModal('edit-member-modal');
 }
+
+// ─── Board filters ────────────────────────────────────────────────────────────
+(function () {
+  const state = { assignee: '', sprint: '', priorities: new Set(), tags: new Set() };
+  const clearBtn = document.getElementById('filter-clear');
+
+  // ── abrir/cerrar dropdowns ──
+  document.querySelectorAll('.flt-drop').forEach(drop => {
+    const btn  = drop.querySelector('.flt-btn');
+    const menu = drop.querySelector('.flt-menu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const opening = !menu.classList.contains('open');
+      closeAll();
+      if (opening) { menu.classList.add('open'); btn.classList.add('open'); }
+    });
+  });
+
+  document.addEventListener('click', closeAll);
+  function closeAll() {
+    document.querySelectorAll('.flt-menu.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.flt-btn.open').forEach(b => b.classList.remove('open'));
+  }
+
+  // ── clicks en opciones ──
+  document.querySelectorAll('.flt-opt').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const filter = opt.dataset.filter;
+      const val    = opt.dataset.value;
+
+      if (filter === 'assignee') {
+        state.assignee = val;
+        document.querySelectorAll('#menu-assignee .flt-opt').forEach(o =>
+          o.classList.toggle('selected', o.dataset.value === val));
+        const lbl = document.querySelector('#btn-assignee .flt-label');
+        if (lbl) lbl.textContent = val ? opt.dataset.label : 'Asignado';
+        document.getElementById('btn-assignee')?.classList.toggle('active', !!val);
+        closeAll();
+
+      } else if (filter === 'sprint') {
+        state.sprint = val;
+        document.querySelectorAll('#menu-sprint .flt-opt').forEach(o =>
+          o.classList.toggle('selected', o.dataset.value === val));
+        const lbl = document.querySelector('#btn-sprint .flt-label');
+        if (lbl) lbl.textContent = val ? opt.dataset.label : 'Sprint';
+        document.getElementById('btn-sprint')?.classList.toggle('active', !!val);
+        closeAll();
+
+      } else if (filter === 'priority') {
+        if (state.priorities.has(val)) { state.priorities.delete(val); opt.classList.remove('selected'); }
+        else                           { state.priorities.add(val);    opt.classList.add('selected');    }
+        const n   = state.priorities.size;
+        const lbl = document.querySelector('#btn-priority .flt-label');
+        if (lbl) lbl.textContent = n === 0 ? 'Prioridad' : n === 1
+          ? document.querySelector(`#menu-priority .flt-opt.selected`)?.dataset.label || 'Prioridad'
+          : `Prioridad (${n})`;
+        document.getElementById('btn-priority')?.classList.toggle('active', n > 0);
+
+      } else if (filter === 'tag') {
+        if (state.tags.has(val)) { state.tags.delete(val); opt.classList.remove('selected'); }
+        else                     { state.tags.add(val);    opt.classList.add('selected');    }
+        const n   = state.tags.size;
+        const lbl = document.querySelector('#btn-tag .flt-label');
+        if (lbl) lbl.textContent = n === 0 ? 'Etiqueta' : n === 1
+          ? document.querySelector(`#menu-tag .flt-opt.selected`)?.dataset.label || 'Etiqueta'
+          : `Etiqueta (${n})`;
+        document.getElementById('btn-tag')?.classList.toggle('active', n > 0);
+      }
+
+      apply();
+    });
+  });
+
+  // ── limpiar ──
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    state.assignee = ''; state.sprint = '';
+    state.priorities.clear(); state.tags.clear();
+    document.querySelectorAll('.flt-opt.selected').forEach(o => o.classList.remove('selected'));
+    // restaurar "Todos" como selected en selects simples
+    document.querySelector('#menu-assignee .flt-opt[data-value=""]')?.classList.add('selected');
+    document.querySelector('#menu-sprint .flt-opt[data-value=""]')?.classList.add('selected');
+    ['btn-assignee','btn-priority','btn-sprint','btn-tag'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('active');
+      const lbl = el.querySelector('.flt-label');
+      if (lbl) lbl.textContent = { 'btn-assignee':'Asignado','btn-priority':'Prioridad','btn-sprint':'Sprint','btn-tag':'Etiqueta' }[id];
+    });
+    apply();
+  });
+
+  // ── filtrado ──
+  function apply() {
+    const hasAssignee = !!state.assignee;
+    const hasSprint   = !!state.sprint;
+    const hasPriority = state.priorities.size > 0;
+    const hasTags     = state.tags.size > 0;
+    const anyActive   = hasAssignee || hasSprint || hasPriority || hasTags;
+
+    document.querySelectorAll('.task-card').forEach(card => {
+      let ok = true;
+      if (hasAssignee) {
+        const want = state.assignee === '__none__' ? '' : state.assignee;
+        if ((card.dataset.assignee || '').trim() !== want) ok = false;
+      }
+      if (ok && hasSprint) {
+        const want = state.sprint === '__none__' ? '' : state.sprint;
+        if ((card.dataset.sprint || '').trim() !== want) ok = false;
+      }
+      if (ok && hasPriority && !state.priorities.has(card.dataset.priority)) ok = false;
+      if (ok && hasTags) {
+        const cardTags = (card.dataset.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!cardTags.some(t => state.tags.has(t))) ok = false;
+      }
+      card.style.display = ok ? '' : 'none';
+    });
+
+    document.querySelectorAll('.board-col').forEach(col => {
+      const allCards = Array.from(col.querySelectorAll('.task-card'));
+      const visible  = allCards.filter(c => c.style.display !== 'none').length;
+      const countEl  = col.querySelector('.col-count');
+      if (countEl) countEl.textContent = anyActive ? `${visible}/${allCards.length}` : allCards.length;
+      const emptyMsg = col.querySelector('.board-col-empty-msg');
+      if (emptyMsg) emptyMsg.style.display = (anyActive && visible === 0) ? '' : 'none';
+    });
+
+    if (clearBtn) clearBtn.style.display = anyActive ? '' : 'none';
+  }
+})();
+
+// ─── List tab: sortable + paginated ──────────────────────────────────────────
+(function () {
+  const tabEl   = document.getElementById('tab-list');
+  if (!tabEl) return;
+  const baseUrl = tabEl.dataset.listUrl;
+  const tbody   = document.getElementById('list-tbody');
+  const pagEl   = document.getElementById('list-pagination');
+  let state = { sort: 'created_at', order: 'desc', page: 1, loaded: false };
+
+  // load on first tab show (detected via style mutation)
+  new MutationObserver(() => {
+    if (tabEl.style.display !== 'none' && !state.loaded) load();
+  }).observe(tabEl, { attributes: true, attributeFilter: ['style'] });
+
+  // column header clicks
+  document.querySelectorAll('.th-sort').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      state.order = (state.sort === col && state.order === 'asc') ? 'desc' : 'asc';
+      if (state.sort !== col) { state.sort = col; state.order = 'asc'; }
+      state.page = 1;
+      load();
+    });
+  });
+
+  function load() {
+    state.loaded = true;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Cargando…</td></tr>`;
+    pagEl.innerHTML = '';
+    fetch(`${baseUrl}?sort=${state.sort}&order=${state.order}&page=${state.page}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+      .then(r => r.json())
+      .then(render)
+      .catch(() => {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger);">Error al cargar tareas.</td></tr>`;
+      });
+  }
+
+  function render(data) {
+    // sort indicators
+    document.querySelectorAll('.th-sort').forEach(th => {
+      const active = th.dataset.col === data.sort;
+      th.classList.toggle('th-active', active);
+      th.querySelector('.sort-icon').textContent = active ? (data.order === 'asc' ? ' ↑' : ' ↓') : '';
+    });
+
+    if (!data.tasks.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted);">Sin tareas en este proyecto.</td></tr>`;
+      pagEl.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = data.tasks.map(t => `
+      <tr style="cursor:pointer;" onclick="window.location='${t.url}'">
+        <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">${esc(t.key)}</span></td>
+        <td style="font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.title)}</td>
+        <td><span class="badge badge-${t.type}">${esc(t.type_display)}</span></td>
+        <td><span class="badge badge-${t.status}">${esc(t.status_display)}</span></td>
+        <td><span class="badge badge-${t.priority}">${esc(t.priority_display)}</span></td>
+        <td>${t.assignee_name
+          ? `<div style="display:flex;align-items:center;gap:6px;"><div class="avatar avatar-sm">${esc(t.assignee_initials)}</div><span class="text-sm">${esc(t.assignee_name)}</span></div>`
+          : '<span class="text-muted text-sm">—</span>'}
+        </td>
+        <td class="${t.is_overdue ? 'text-danger' : 'text-muted'} text-sm">${t.due_date || '—'}</td>
+      </tr>`).join('');
+
+    renderPagination(data);
+  }
+
+  function renderPagination(data) {
+    if (data.pages <= 1) { pagEl.innerHTML = ''; return; }
+    const from = (data.page - 1) * data.per_page + 1;
+    const to   = Math.min(data.page * data.per_page, data.total);
+    let html = `<span class="text-muted text-sm">${from}–${to} de ${data.total} tareas</span><div style="display:flex;gap:4px;">`;
+    html += `<button class="btn btn-ghost btn-sm pag-btn" data-page="${data.page - 1}" ${data.page <= 1 ? 'disabled' : ''}>‹</button>`;
+    pageRange(data.page, data.pages).forEach(p => {
+      html += p === '…'
+        ? `<span style="padding:5px 6px;color:var(--text-muted);align-self:center;">…</span>`
+        : `<button class="btn btn-ghost btn-sm pag-btn${p === data.page ? ' pag-active' : ''}" data-page="${p}">${p}</button>`;
+    });
+    html += `<button class="btn btn-ghost btn-sm pag-btn" data-page="${data.page + 1}" ${data.page >= data.pages ? 'disabled' : ''}>›</button></div>`;
+    pagEl.innerHTML = html;
+    pagEl.querySelectorAll('.pag-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => { state.page = +btn.dataset.page; load(); });
+    });
+  }
+
+  function pageRange(cur, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const r = [1];
+    if (cur > 3) r.push('…');
+    for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) r.push(p);
+    if (cur < total - 2) r.push('…');
+    r.push(total);
+    return r;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+})();
 </script>
 {% endblock %}
