@@ -215,45 +215,25 @@
 </div>
 
 <!-- List Tab -->
-<div id="tab-list" style="display:none;">
+<div id="tab-list" style="display:none;" data-list-url="{% url 'task_list_data' project.pk %}">
   <div class="card" style="padding:0;overflow-x:auto;">
-    <table class="table">
+    <table class="table" id="list-table">
       <thead>
         <tr>
-          <th>Clave</th>
-          <th>Título</th>
-          <th>Tipo</th>
-          <th>Estado</th>
-          <th>Prioridad</th>
-          <th>Asignado a</th>
-          <th>Vence</th>
+          <th class="th-sort" data-col="key">Clave <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="title">Título <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="type">Tipo <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="status">Estado <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="priority">Prioridad <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="assignee">Asignado a <span class="sort-icon"></span></th>
+          <th class="th-sort" data-col="due_date">Vence <span class="sort-icon"></span></th>
         </tr>
       </thead>
-      <tbody>
-        {% for status_key, status_data in tasks_by_status.items %}
-        {% for task in status_data.tasks %}
-        <tr style="cursor:pointer;" onclick="window.location='{% url 'task_detail' project.pk task.pk %}'">
-          <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">{{ project.key }}-{{ task.project_sequence }}</span></td>
-          <td style="font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ task.title }}</td>
-          <td><span class="badge badge-{{ task.type }}">{{ task.get_type_display }}</span></td>
-          <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span></td>
-          <td><span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
-          <td>
-            {% if task.assignee %}
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div class="avatar avatar-sm">{% if task.assignee.avatar %}<img src="{{ task.assignee.avatar.url }}" alt="">{% else %}{{ task.assignee.get_initials }}{% endif %}</div>
-              <span class="text-sm">{{ task.assignee.name }}</span>
-            </div>
-            {% else %}<span class="text-muted text-sm">—</span>{% endif %}
-          </td>
-          <td class="{% if task.is_overdue %}text-danger{% else %}text-muted{% endif %} text-sm">
-            {{ task.due_date|date:"d M Y"|default:"—" }}
-          </td>
-        </tr>
-        {% endfor %}
-        {% endfor %}
+      <tbody id="list-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Cargando…</td></tr>
       </tbody>
     </table>
+    <div id="list-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);min-height:48px;"></div>
   </div>
 </div>
 
@@ -727,6 +707,110 @@ function openEditMember(memberPk, name, currentRole) {
     });
 
     if (clearBtn) clearBtn.style.display = anyActive ? '' : 'none';
+  }
+})();
+
+// ─── List tab: sortable + paginated ──────────────────────────────────────────
+(function () {
+  const tabEl   = document.getElementById('tab-list');
+  if (!tabEl) return;
+  const baseUrl = tabEl.dataset.listUrl;
+  const tbody   = document.getElementById('list-tbody');
+  const pagEl   = document.getElementById('list-pagination');
+  let state = { sort: 'created_at', order: 'desc', page: 1, loaded: false };
+
+  // load on first tab show (detected via style mutation)
+  new MutationObserver(() => {
+    if (tabEl.style.display !== 'none' && !state.loaded) load();
+  }).observe(tabEl, { attributes: true, attributeFilter: ['style'] });
+
+  // column header clicks
+  document.querySelectorAll('.th-sort').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      state.order = (state.sort === col && state.order === 'asc') ? 'desc' : 'asc';
+      if (state.sort !== col) { state.sort = col; state.order = 'asc'; }
+      state.page = 1;
+      load();
+    });
+  });
+
+  function load() {
+    state.loaded = true;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Cargando…</td></tr>`;
+    pagEl.innerHTML = '';
+    fetch(`${baseUrl}?sort=${state.sort}&order=${state.order}&page=${state.page}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+      .then(r => r.json())
+      .then(render)
+      .catch(() => {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger);">Error al cargar tareas.</td></tr>`;
+      });
+  }
+
+  function render(data) {
+    // sort indicators
+    document.querySelectorAll('.th-sort').forEach(th => {
+      const active = th.dataset.col === data.sort;
+      th.classList.toggle('th-active', active);
+      th.querySelector('.sort-icon').textContent = active ? (data.order === 'asc' ? ' ↑' : ' ↓') : '';
+    });
+
+    if (!data.tasks.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted);">Sin tareas en este proyecto.</td></tr>`;
+      pagEl.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = data.tasks.map(t => `
+      <tr style="cursor:pointer;" onclick="window.location='${t.url}'">
+        <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">${esc(t.key)}</span></td>
+        <td style="font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(t.title)}</td>
+        <td><span class="badge badge-${t.type}">${esc(t.type_display)}</span></td>
+        <td><span class="badge badge-${t.status}">${esc(t.status_display)}</span></td>
+        <td><span class="badge badge-${t.priority}">${esc(t.priority_display)}</span></td>
+        <td>${t.assignee_name
+          ? `<div style="display:flex;align-items:center;gap:6px;"><div class="avatar avatar-sm">${esc(t.assignee_initials)}</div><span class="text-sm">${esc(t.assignee_name)}</span></div>`
+          : '<span class="text-muted text-sm">—</span>'}
+        </td>
+        <td class="${t.is_overdue ? 'text-danger' : 'text-muted'} text-sm">${t.due_date || '—'}</td>
+      </tr>`).join('');
+
+    renderPagination(data);
+  }
+
+  function renderPagination(data) {
+    if (data.pages <= 1) { pagEl.innerHTML = ''; return; }
+    const from = (data.page - 1) * data.per_page + 1;
+    const to   = Math.min(data.page * data.per_page, data.total);
+    let html = `<span class="text-muted text-sm">${from}–${to} de ${data.total} tareas</span><div style="display:flex;gap:4px;">`;
+    html += `<button class="btn btn-ghost btn-sm pag-btn" data-page="${data.page - 1}" ${data.page <= 1 ? 'disabled' : ''}>‹</button>`;
+    pageRange(data.page, data.pages).forEach(p => {
+      html += p === '…'
+        ? `<span style="padding:5px 6px;color:var(--text-muted);align-self:center;">…</span>`
+        : `<button class="btn btn-ghost btn-sm pag-btn${p === data.page ? ' pag-active' : ''}" data-page="${p}">${p}</button>`;
+    });
+    html += `<button class="btn btn-ghost btn-sm pag-btn" data-page="${data.page + 1}" ${data.page >= data.pages ? 'disabled' : ''}>›</button></div>`;
+    pagEl.innerHTML = html;
+    pagEl.querySelectorAll('.pag-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => { state.page = +btn.dataset.page; load(); });
+    });
+  }
+
+  function pageRange(cur, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const r = [1];
+    if (cur > 3) r.push('…');
+    for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) r.push(p);
+    if (cur < total - 2) r.push('…');
+    r.push(total);
+    return r;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 })();
 </script>

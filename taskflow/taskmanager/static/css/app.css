@@ -616,6 +616,13 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   word-break: break-word;
 }
 
+/* ─── Sortable list table ─── */
+.th-sort { cursor:pointer; user-select:none; white-space:nowrap; transition:color 0.12s; }
+.th-sort:hover { color:var(--text); }
+.th-sort.th-active { color:var(--accent); }
+.sort-icon { font-style:normal; font-size:0.8em; }
+.pag-active { background:var(--accent-light) !important; color:var(--accent) !important; border:1px solid var(--accent) !important; font-weight:600; }
+
 /* ─── Filter dropdown row ─── */
 .flt-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
 .flt-drop { position:relative; }

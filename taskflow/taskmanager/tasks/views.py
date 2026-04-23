@@ -192,6 +192,96 @@ def task_update_status(request, project_pk, pk, project=None, membership=None):
 
 
 @login_required
+@require_project_member(pk_kwarg='project_pk')
+def task_list_data(request, project_pk, project=None, membership=None):
+    from django.db.models import Case, When, IntegerField, Value, F
+    from django.urls import reverse
+
+    SORT_MAP = {
+        'key':       'project_sequence',
+        'title':     'title',
+        'type':      'type',
+        'status':    None,
+        'priority':  None,
+        'assignee':  'assignee__name',
+        'due_date':  None,
+        'created_at':'created_at',
+    }
+    sort  = request.GET.get('sort', 'created_at')
+    order = request.GET.get('order', 'desc')
+    if sort not in SORT_MAP:
+        sort = 'created_at'
+    try:
+        page = max(1, int(request.GET.get('page', 1)))
+    except ValueError:
+        page = 1
+    per_page = 25
+
+    qs = project.tasks.filter(parent_task__isnull=True).select_related('assignee')
+
+    if sort == 'status':
+        expr = Case(
+            When(status='backlog',     then=Value(1)),
+            When(status='todo',        then=Value(2)),
+            When(status='in_progress', then=Value(3)),
+            When(status='in_review',   then=Value(4)),
+            When(status='done',        then=Value(5)),
+            default=Value(0), output_field=IntegerField(),
+        )
+        qs = qs.order_by(expr.desc() if order == 'desc' else expr)
+    elif sort == 'priority':
+        expr = Case(
+            When(priority='low',      then=Value(1)),
+            When(priority='medium',   then=Value(2)),
+            When(priority='high',     then=Value(3)),
+            When(priority='critical', then=Value(4)),
+            default=Value(0), output_field=IntegerField(),
+        )
+        qs = qs.order_by(expr.desc() if order == 'desc' else expr)
+    elif sort == 'due_date':
+        f = F('due_date')
+        qs = qs.order_by(f.desc(nulls_last=True) if order == 'desc' else f.asc(nulls_last=True))
+    else:
+        field = SORT_MAP[sort]
+        qs = qs.order_by(f'-{field}' if order == 'desc' else field)
+
+    total = qs.count()
+    pages = max(1, (total + per_page - 1) // per_page)
+    page  = min(page, pages)
+    today = timezone.now().date()
+
+    task_list = []
+    for t in qs[(page - 1) * per_page: page * per_page]:
+        overdue = bool(t.due_date and t.status != 'done' and t.due_date < today)
+        task_list.append({
+            'pk':               str(t.pk),
+            'key':              f'{project.key}-{t.project_sequence}',
+            'title':            t.title,
+            'type':             t.type,
+            'type_display':     t.get_type_display(),
+            'status':           t.status,
+            'status_display':   t.get_status_display(),
+            'priority':         t.priority,
+            'priority_display': t.get_priority_display(),
+            'assignee_name':    t.assignee.name if t.assignee else None,
+            'assignee_initials':t.assignee.get_initials() if t.assignee else None,
+            'due_date':         t.due_date.strftime('%d %b %Y') if t.due_date else None,
+            'is_overdue':       overdue,
+            'url':              reverse('task_detail', args=[project_pk, t.pk]),
+        })
+
+    return JsonResponse({
+        'tasks':    task_list,
+        'total':    total,
+        'page':     page,
+        'per_page': per_page,
+        'pages':    pages,
+        'sort':     sort,
+        'order':    order,
+    })
+
+
+@login_required
 @require_POST
 @require_project_member(pk_kwarg='project_pk')
 def comment_create(request, project_pk, task_pk, project=None, membership=None):
