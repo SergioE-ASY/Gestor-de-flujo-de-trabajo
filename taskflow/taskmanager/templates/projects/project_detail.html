@@ -257,10 +257,10 @@
           <td><span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
           <td>
             {% if task.assignee %}
-            <div style="display:flex;align-items:center;gap:6px;">
+            <a href="{% url 'user_profile' task.assignee.pk %}" style="display:flex;align-items:center;gap:6px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
               <div class="avatar avatar-sm">{% if task.assignee.avatar %}<img src="{{ task.assignee.avatar.url }}" alt="">{% else %}{{ task.assignee.get_initials }}{% endif %}</div>
               <span class="text-sm">{{ task.assignee.name }}</span>
-            </div>
+            </a>
             {% else %}<span class="text-muted text-sm">—</span>{% endif %}
           </td>
           <td class="{% if task.is_overdue %}text-danger{% else %}text-muted{% endif %} text-sm">
@@ -379,10 +379,10 @@
         {% for row in hours_by_member %}
         <tr>
           <td>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <a href="{% url 'user_profile' row.user__id %}" style="display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
               <div class="avatar avatar-sm">{{ row.user__name|slice:":1"|upper }}</div>
               {{ row.user__name }}
-            </div>
+            </a>
           </td>
           <td style="text-align:right;font-weight:600;">{{ row.logged }}h</td>
           {% if hour_stats.budget %}
@@ -471,10 +471,10 @@
         {% for mem in members %}
         <tr>
           <td>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <a href="{% url 'user_profile' mem.user.pk %}" style="display:flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
               <div class="avatar avatar-sm">{% if mem.user.avatar %}<img src="{{ mem.user.avatar.url }}" alt="">{% else %}{{ mem.user.get_initials }}{% endif %}</div>
               {{ mem.user.name }}
-            </div>
+            </a>
           </td>
           <td class="text-muted text-sm">{{ mem.user.email }}</td>
           <td><span class="badge badge-{{ mem.role }}">{{ mem.get_role_display }}</span></td>
