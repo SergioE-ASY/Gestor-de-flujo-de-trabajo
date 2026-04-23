@@ -72,71 +72,87 @@
 <!-- Board Tab -->
 <div id="tab-board">
 
-  <!-- Filter toggle row -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
-    <div id="filter-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:26px;align-items:center;"></div>
-    <button id="filter-toggle" class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:6px;flex-shrink:0;" title="Filtrar tareas">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filtros
-      <span id="filter-count" style="background:var(--accent);color:var(--bg);font-size:0.62rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px;line-height:1;"></span>
-    </button>
-  </div>
+  <!-- Inline filter row -->
+  <div class="flt-row">
 
-  <!-- Collapsible filter bar -->
-  <div id="board-filter-bar" style="display:none;">
-    <div class="filter-bar">
-
-      <div class="filter-group">
-        <div class="filter-group-label">Asignado a</div>
-        <select id="filter-assignee" class="form-control filter-select">
-          <option value="">Todos</option>
-          <option value="__none__">Sin asignar</option>
-          {% for mem in members %}
-          <option value="{{ mem.user.pk }}">{{ mem.user.name }}</option>
-          {% endfor %}
-        </select>
+    <!-- Asignado -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-assignee">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span class="flt-label">Asignado</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-assignee">
+        <button class="flt-opt selected" data-filter="assignee" data-value="" data-label="Asignado">Todos</button>
+        <div class="flt-sep"></div>
+        <button class="flt-opt" data-filter="assignee" data-value="__none__" data-label="Sin asignar">Sin asignar</button>
+        {% for mem in members %}
+        <button class="flt-opt" data-filter="assignee" data-value="{{ mem.user.pk }}" data-label="{{ mem.user.name }}">{{ mem.user.name }}</button>
+        {% endfor %}
       </div>
-
-      {% if sprints %}
-      <div class="filter-group">
-        <div class="filter-group-label">Sprint</div>
-        <select id="filter-sprint" class="form-control filter-select">
-          <option value="">Todos</option>
-          <option value="__none__">Sin sprint</option>
-          {% for sprint in sprints %}
-          <option value="{{ sprint.pk }}">{{ sprint.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% endif %}
-
-      <div class="filter-group">
-        <div class="filter-group-label">Prioridad</div>
-        <div class="filter-pills">
-          {% for value, label in priority_choices %}
-          <button class="filter-pill" data-filter="priority" data-value="{{ value }}">{{ label }}</button>
-          {% endfor %}
-        </div>
-      </div>
-
-      {% if tags %}
-      <div class="filter-group">
-        <div class="filter-group-label">Etiqueta</div>
-        <div class="filter-pills">
-          {% for tag in tags %}
-          <button class="filter-pill" data-filter="tag" data-value="{{ tag.pk }}" style="border-color:{{ tag.color }}55;">
-            <span class="tag-dot" style="background:{{ tag.color }};"></span>{{ tag.name }}
-          </button>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
-
-      <div class="filter-group" style="justify-content:flex-end;align-self:flex-end;">
-        <button id="filter-clear" class="btn btn-ghost btn-sm" style="display:none;">✕ Limpiar</button>
-      </div>
-
     </div>
+
+    <!-- Prioridad -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-priority">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="flt-label">Prioridad</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-priority">
+        {% for value, label in priority_choices %}
+        <button class="flt-opt" data-filter="priority" data-value="{{ value }}" data-label="{{ label }}">
+          <span class="flt-check"></span>{{ label }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if sprints %}
+    <!-- Sprint -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-sprint">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="flt-label">Sprint</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-sprint">
+        <button class="flt-opt selected" data-filter="sprint" data-value="" data-label="Sprint">Todos</button>
+        <div class="flt-sep"></div>
+        <button class="flt-opt" data-filter="sprint" data-value="__none__" data-label="Sin sprint">Sin sprint</button>
+        {% for sprint in sprints %}
+        <button class="flt-opt" data-filter="sprint" data-value="{{ sprint.pk }}" data-label="{{ sprint.name }}">{{ sprint.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if tags %}
+    <!-- Etiqueta -->
+    <div class="flt-drop">
+      <button class="flt-btn" id="btn-tag">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="flt-label">Etiqueta</span>
+        <svg class="flt-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="flt-menu" id="menu-tag">
+        {% for tag in tags %}
+        <button class="flt-opt" data-filter="tag" data-value="{{ tag.pk }}" data-label="{{ tag.name }}">
+          <span class="flt-check"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ tag.color }};flex-shrink:0;"></span>
+          {{ tag.name }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Limpiar (solo visible cuando hay filtros activos) -->
+    <button id="filter-clear" class="btn btn-ghost btn-sm" style="display:none;gap:5px;margin-left:2px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Limpiar
+    </button>
+
   </div>
 
   <div class="board">
@@ -188,6 +204,7 @@
           </div>
         </div>
         {% endfor %}
+        <div class="board-col-empty-msg">Sin tareas con estos filtros</div>
         <a href="{% url 'task_create' project.pk %}?status={{ status_key }}" style="display:flex;align-items:center;gap:6px;padding:8px;color:var(--text-muted);font-size:0.8rem;border-radius:var(--radius-sm);text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
           <span>+</span> Agregar tarea
         </a>
@@ -584,127 +601,133 @@ function openEditMember(memberPk, name, currentRole) {
 
 // ─── Board filters ────────────────────────────────────────────────────────────
 (function () {
-  const filterBar   = document.getElementById('board-filter-bar');
-  const toggleBtn   = document.getElementById('filter-toggle');
-  const clearBtn    = document.getElementById('filter-clear');
-  const countBadge  = document.getElementById('filter-count');
-  const chipsEl     = document.getElementById('filter-chips');
-  const assigneeSel = document.getElementById('filter-assignee');
-  const sprintSel   = document.getElementById('filter-sprint');
-  if (!filterBar) return;
-
   const state = { assignee: '', sprint: '', priorities: new Set(), tags: new Set() };
+  const clearBtn = document.getElementById('filter-clear');
 
-  // ── toggle bar open/closed ──
-  toggleBtn.addEventListener('click', () => {
-    const open = filterBar.style.display !== 'none';
-    filterBar.style.display = open ? 'none' : '';
-    toggleBtn.classList.toggle('active', !open);
+  // ── abrir/cerrar dropdowns ──
+  document.querySelectorAll('.flt-drop').forEach(drop => {
+    const btn  = drop.querySelector('.flt-btn');
+    const menu = drop.querySelector('.flt-menu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const opening = !menu.classList.contains('open');
+      closeAll();
+      if (opening) { menu.classList.add('open'); btn.classList.add('open'); }
+    });
   });
 
-  // ── selects ──
-  if (assigneeSel) assigneeSel.addEventListener('change', () => { state.assignee = assigneeSel.value; apply(); });
-  if (sprintSel)   sprintSel.addEventListener('change',   () => { state.sprint   = sprintSel.value;   apply(); });
+  document.addEventListener('click', closeAll);
+  function closeAll() {
+    document.querySelectorAll('.flt-menu.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.flt-btn.open').forEach(b => b.classList.remove('open'));
+  }
 
-  // ── pill toggles (priority + tag, multi-select) ──
-  document.querySelectorAll('.filter-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.filter;   // 'priority' | 'tag'
-      const val = btn.dataset.value;
-      const set = key === 'priority' ? state.priorities : state.tags;
-      if (set.has(val)) { set.delete(val); btn.classList.remove('active'); }
-      else              { set.add(val);    btn.classList.add('active');    }
+  // ── clicks en opciones ──
+  document.querySelectorAll('.flt-opt').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const filter = opt.dataset.filter;
+      const val    = opt.dataset.value;
+
+      if (filter === 'assignee') {
+        state.assignee = val;
+        document.querySelectorAll('#menu-assignee .flt-opt').forEach(o =>
+          o.classList.toggle('selected', o.dataset.value === val));
+        const lbl = document.querySelector('#btn-assignee .flt-label');
+        if (lbl) lbl.textContent = val ? opt.dataset.label : 'Asignado';
+        document.getElementById('btn-assignee')?.classList.toggle('active', !!val);
+        closeAll();
+
+      } else if (filter === 'sprint') {
+        state.sprint = val;
+        document.querySelectorAll('#menu-sprint .flt-opt').forEach(o =>
+          o.classList.toggle('selected', o.dataset.value === val));
+        const lbl = document.querySelector('#btn-sprint .flt-label');
+        if (lbl) lbl.textContent = val ? opt.dataset.label : 'Sprint';
+        document.getElementById('btn-sprint')?.classList.toggle('active', !!val);
+        closeAll();
+
+      } else if (filter === 'priority') {
+        if (state.priorities.has(val)) { state.priorities.delete(val); opt.classList.remove('selected'); }
+        else                           { state.priorities.add(val);    opt.classList.add('selected');    }
+        const n   = state.priorities.size;
+        const lbl = document.querySelector('#btn-priority .flt-label');
+        if (lbl) lbl.textContent = n === 0 ? 'Prioridad' : n === 1
+          ? document.querySelector(`#menu-priority .flt-opt.selected`)?.dataset.label || 'Prioridad'
+          : `Prioridad (${n})`;
+        document.getElementById('btn-priority')?.classList.toggle('active', n > 0);
+
+      } else if (filter === 'tag') {
+        if (state.tags.has(val)) { state.tags.delete(val); opt.classList.remove('selected'); }
+        else                     { state.tags.add(val);    opt.classList.add('selected');    }
+        const n   = state.tags.size;
+        const lbl = document.querySelector('#btn-tag .flt-label');
+        if (lbl) lbl.textContent = n === 0 ? 'Etiqueta' : n === 1
+          ? document.querySelector(`#menu-tag .flt-opt.selected`)?.dataset.label || 'Etiqueta'
+          : `Etiqueta (${n})`;
+        document.getElementById('btn-tag')?.classList.toggle('active', n > 0);
+      }
+
       apply();
     });
   });
 
-  // ── clear ──
-  clearBtn.addEventListener('click', () => {
+  // ── limpiar ──
+  if (clearBtn) clearBtn.addEventListener('click', () => {
     state.assignee = ''; state.sprint = '';
     state.priorities.clear(); state.tags.clear();
-    if (assigneeSel) assigneeSel.value = '';
-    if (sprintSel)   sprintSel.value   = '';
-    document.querySelectorAll('.filter-pill.active').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.flt-opt.selected').forEach(o => o.classList.remove('selected'));
+    // restaurar "Todos" como selected en selects simples
+    document.querySelector('#menu-assignee .flt-opt[data-value=""]')?.classList.add('selected');
+    document.querySelector('#menu-sprint .flt-opt[data-value=""]')?.classList.add('selected');
+    ['btn-assignee','btn-priority','btn-sprint','btn-tag'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('active');
+      const lbl = el.querySelector('.flt-label');
+      if (lbl) lbl.textContent = { 'btn-assignee':'Asignado','btn-priority':'Prioridad','btn-sprint':'Sprint','btn-tag':'Etiqueta' }[id];
+    });
     apply();
   });
 
-  // ── core filter logic ──
+  // ── filtrado ──
   function apply() {
-    const hasAssignee  = !!state.assignee;
-    const hasSprint    = !!state.sprint;
-    const hasPriority  = state.priorities.size > 0;
-    const hasTags      = state.tags.size > 0;
-    const anyActive    = hasAssignee || hasSprint || hasPriority || hasTags;
+    const hasAssignee = !!state.assignee;
+    const hasSprint   = !!state.sprint;
+    const hasPriority = state.priorities.size > 0;
+    const hasTags     = state.tags.size > 0;
+    const anyActive   = hasAssignee || hasSprint || hasPriority || hasTags;
 
     document.querySelectorAll('.task-card').forEach(card => {
       let ok = true;
       if (hasAssignee) {
         const want = state.assignee === '__none__' ? '' : state.assignee;
-        if (card.dataset.assignee !== want) ok = false;
+        if ((card.dataset.assignee || '').trim() !== want) ok = false;
       }
       if (ok && hasSprint) {
         const want = state.sprint === '__none__' ? '' : state.sprint;
-        if (card.dataset.sprint !== want) ok = false;
+        if ((card.dataset.sprint || '').trim() !== want) ok = false;
       }
       if (ok && hasPriority && !state.priorities.has(card.dataset.priority)) ok = false;
       if (ok && hasTags) {
-        const cardTags = card.dataset.tags ? card.dataset.tags.split(',').filter(Boolean) : [];
+        const cardTags = (card.dataset.tags || '').split(',').map(s => s.trim()).filter(Boolean);
         if (!cardTags.some(t => state.tags.has(t))) ok = false;
       }
-      card.classList.toggle('filter-hidden', !ok);
+      card.style.display = ok ? '' : 'none';
     });
 
-    // Update column counts
     document.querySelectorAll('.board-col').forEach(col => {
-      const all     = col.querySelectorAll('.task-card').length;
-      const visible = col.querySelectorAll('.task-card:not(.filter-hidden)').length;
-      const el      = col.querySelector('.col-count');
-      if (el) el.textContent = anyActive ? `${visible}/${all}` : all;
+      const allCards = Array.from(col.querySelectorAll('.task-card'));
+      const visible  = allCards.filter(c => c.style.display !== 'none').length;
+      const countEl  = col.querySelector('.col-count');
+      if (countEl) countEl.textContent = anyActive ? `${visible}/${allCards.length}` : allCards.length;
+      const emptyMsg = col.querySelector('.board-col-empty-msg');
+      if (emptyMsg) emptyMsg.style.display = (anyActive && visible === 0) ? '' : 'none';
     });
 
-    // Badge count
-    const n = (state.assignee ? 1 : 0) + (state.sprint ? 1 : 0) + state.priorities.size + state.tags.size;
-    countBadge.textContent = n;
-    countBadge.style.display = n > 0 ? 'inline-flex' : 'none';
-    clearBtn.style.display   = anyActive ? '' : 'none';
-
-    // Active-filter chips above the board
-    renderChips();
+    if (clearBtn) clearBtn.style.display = anyActive ? '' : 'none';
   }
-
-  // ── summary chips row ──
-  function renderChips() {
-    if (!chipsEl) return;
-    const parts = [];
-    if (state.assignee) {
-      const sel = assigneeSel;
-      const label = sel ? sel.options[sel.selectedIndex].text : state.assignee;
-      parts.push({ label: '👤 ' + label, clear: () => { state.assignee = ''; if (assigneeSel) assigneeSel.value = ''; } });
-    }
-    if (state.sprint) {
-      const sel = sprintSel;
-      const label = sel ? sel.options[sel.selectedIndex].text : state.sprint;
-      parts.push({ label: '🏃 ' + label, clear: () => { state.sprint = ''; if (sprintSel) sprintSel.value = ''; } });
-    }
-    state.priorities.forEach(p => {
-      const btn = document.querySelector(`.filter-pill[data-filter="priority"][data-value="${p}"]`);
-      parts.push({ label: btn ? btn.textContent.trim() : p, clear: () => { state.priorities.delete(p); document.querySelector(`.filter-pill[data-filter="priority"][data-value="${p}"]`)?.classList.remove('active'); } });
-    });
-    state.tags.forEach(t => {
-      const btn = document.querySelector(`.filter-pill[data-filter="tag"][data-value="${t}"]`);
-      parts.push({ label: btn ? btn.textContent.trim() : t, clear: () => { state.tags.delete(t); document.querySelector(`.filter-pill[data-filter="tag"][data-value="${t}"]`)?.classList.remove('active'); } });
-    });
-
-    chipsEl.innerHTML = parts.map((p, i) =>
-      `<span class="filter-chip">${p.label}<button onclick="boardFilterChipRemove(${i})" aria-label="Quitar">×</button></span>`
-    ).join('');
-    window._boardFilterChipRemovers = parts.map(p => p.clear);
-  }
-
-  window.boardFilterChipRemove = function(i) {
-    const fn = window._boardFilterChipRemovers[i];
-    if (fn) { fn(); apply(); }
-  };
 })();
 </script>
 {% endblock %}
