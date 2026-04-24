@@ -58,6 +58,7 @@ class Task(models.Model):
         null=True, blank=True, related_name='responsible_tasks',
     )
     hours_validated = models.BooleanField(default=False)
+    start_date = models.DateField(null=True, blank=True)
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

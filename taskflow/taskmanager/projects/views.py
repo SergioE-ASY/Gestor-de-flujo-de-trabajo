@@ -265,3 +265,57 @@ def sprint_update(request, pk, sprint_pk, project=None, membership=None):
         sprint.save()
         messages.success(request, 'Sprint actualizado.')
     return redirect('project_detail', pk=pk)
+
+
+@login_required
+@require_project_member()
+def project_roadmap(request, pk, project=None, membership=None):
+    import json
+    from tasks.models import Task
+
+    tasks_qs = project.tasks.select_related('assignee', 'parent_task', 'sprint').filter(
+        type__in=('task', 'story', 'epic', 'bug')
+    )
+    sprints_qs = project.sprints.all().order_by('start_date')
+
+    STATUS_COLORS = {
+        'backlog': '#6b7280',
+        'todo': '#3b82f6',
+        'in_progress': '#f59e0b',
+        'in_review': '#8b5cf6',
+        'done': '#22c55e',
+    }
+
+    tasks_data = []
+    for t in tasks_qs:
+        tasks_data.append({
+            'id': str(t.pk),
+            'key': f'{project.key}-{t.project_sequence}',
+            'title': t.title,
+            'status': t.status,
+            'color': STATUS_COLORS.get(t.status, '#6b7280'),
+            'start': t.start_date.isoformat() if t.start_date else None,
+            'end': t.due_date.isoformat() if t.due_date else None,
+            'parent_id': str(t.parent_task_id) if t.parent_task_id else None,
+            'assignee': t.assignee.get_initials() if t.assignee else None,
+            'sprint_id': str(t.sprint_id) if t.sprint_id else None,
+            'url': f'/projects/{project.pk}/tasks/{t.pk}/',  # matches task_detail URL pattern
+
+        })
+
+    sprints_data = []
+    for s in sprints_qs:
+        sprints_data.append({
+            'id': str(s.pk),
+            'name': s.name,
+            'start': s.start_date.date().isoformat() if s.start_date else None,
+            'end': s.end_date.date().isoformat() if s.end_date else None,
+            'status': s.status,
+        })
+
+    return render(request, 'projects/project_roadmap.html', {
+        'project': project,
+        'membership': membership,
+        'tasks_json': json.dumps(tasks_data),
+        'sprints_json': json.dumps(sprints_data),
+    })

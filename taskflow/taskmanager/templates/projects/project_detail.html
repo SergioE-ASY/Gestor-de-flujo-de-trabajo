@@ -10,6 +10,7 @@
   {% if membership.role in 'owner,manager' %}
   <a href="{% url 'project_edit' project.pk %}" class="btn btn-secondary btn-sm">Editar</a>
   {% endif %}
+  <a href="{% url 'project_roadmap' project.pk %}" class="btn btn-ghost btn-sm">Roadmap</a>
   <a href="{% url 'task_create' project.pk %}" class="btn btn-primary btn-sm">+ Nueva tarea</a>
 {% endblock %}
 
