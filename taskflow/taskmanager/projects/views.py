@@ -132,6 +132,39 @@ def _sprint_burndown(sprint):
     }
 
 
+def _velocity_data(sprints):
+    """Return list of velocity entries for completed/active sprints, oldest-first, max 8."""
+    from django.utils import timezone
+
+    eligible = sorted(
+        [s for s in sprints if s.status in ('completed', 'active')],
+        key=lambda s: s.start_date or timezone.now(),
+    )
+    eligible = eligible[-8:]  # keep most recent 8
+
+    result = []
+    for sprint in eligible:
+        tasks = list(sprint.tasks.values('status', 'estimated_hours'))
+        done = [t for t in tasks if t['status'] == 'done']
+
+        hours_done = sum(float(t['estimated_hours']) for t in done if t['estimated_hours'])
+        hours_total = sum(float(t['estimated_hours']) for t in tasks if t['estimated_hours'])
+
+        label = sprint.name if len(sprint.name) <= 12 else sprint.name[:11] + '…'
+
+        result.append({
+            'name': sprint.name,
+            'label': label,
+            'status': sprint.status,
+            'tasks_done': len(done),
+            'tasks_total': len(tasks),
+            'hours_done': round(hours_done, 1),
+            'hours_total': round(hours_total, 1),
+        })
+
+    return result
+
+
 @login_required
 @require_project_member()
 def project_detail(request, pk, project=None, membership=None):
@@ -176,6 +209,8 @@ def project_detail(request, pk, project=None, membership=None):
         if bd:
             burndown_data[str(sprint.pk)] = bd
 
+    velocity_data = _velocity_data(list(sprints))
+
     return render(request, 'projects/project_detail.html', {
         'project': project,
         'membership': membership,
@@ -190,6 +225,7 @@ def project_detail(request, pk, project=None, membership=None):
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
         'burndown_json': json.dumps(burndown_data),
+        'velocity_json': json.dumps(velocity_data),
     })
 
 

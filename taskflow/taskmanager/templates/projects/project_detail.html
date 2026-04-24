@@ -304,10 +304,32 @@
   {% endif %}
 
   {% if sprints %}
+
+  <!-- Velocity chart card -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <span class="card-title" style="margin:0;">Velocidad del equipo</span>
+      <div id="vel-toggle" style="display:flex;gap:4px;">
+        <button class="vel-btn vel-btn-active" data-metric="tasks" onclick="switchVelMetric('tasks',this)">Tareas</button>
+        <button class="vel-btn" id="vel-hours-btn" data-metric="hours" onclick="switchVelMetric('hours',this)">Horas est.</button>
+      </div>
+    </div>
+    <div id="velocity-chart"></div>
+    <div id="velocity-empty" class="text-muted text-sm" style="display:none;padding:24px 0;text-align:center;">
+      Completa al menos un sprint para ver la velocidad del equipo.
+    </div>
+    <div class="vel-legend">
+      <span class="vel-legend-item"><span class="vel-legend-swatch" style="opacity:0.85;"></span>Completado</span>
+      <span class="vel-legend-item"><span class="vel-legend-swatch" style="opacity:0.45;"></span>Activo</span>
+      <span class="vel-legend-item vel-legend-avg">--- Promedio</span>
+    </div>
+  </div>
+
+  <!-- Individual sprint cards -->
   <div style="display:flex;flex-direction:column;gap:12px;">
     {% for sprint in sprints %}
     <div class="card" style="padding-bottom:0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 0 0 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="badge badge-{{ sprint.status }}">{{ sprint.get_status_display }}</span>
           <span style="font-weight:600;">{{ sprint.name }}</span>
@@ -331,146 +353,230 @@
 
 <script>
 (function () {
-  const DATA = {{ burndown_json|safe }};
-  if (!DATA || !Object.keys(DATA).length) return;
+  const BD   = {{ burndown_json|safe }};
+  const VEL  = {{ velocity_json|safe }};
 
-  const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  function fmtDate(iso) {
-    const [, m, d] = iso.split('-');
-    return `${parseInt(d)} ${MONTHS[parseInt(m)-1]}`;
-  }
-
+  // ── Shared SVG helpers ──────────────────────────────────────────────────
   const NS = 'http://www.w3.org/2000/svg';
   function svgEl(tag, attrs) {
     const e = document.createElementNS(NS, tag);
     for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
     return e;
   }
-
-  function drawBurndown(container, data) {
-    const W = 520, H = 130;
-    const PL = 32, PR = 12, PT = 10, PB = 26;
-    const cw = W - PL - PR;
-    const ch = H - PT - PB;
-
-    const { total, actual, start, end, today } = data;
-
-    const toMs   = s => new Date(s + 'T00:00:00').getTime();
-    const startMs = toMs(start);
-    const endMs   = toMs(end);
-    const rangeMs = endMs - startMs || 1;
-
-    function xOf(iso) { return PL + Math.max(0, Math.min(1, (toMs(iso) - startMs) / rangeMs)) * cw; }
-    function yOf(rem) { return PT + (1 - Math.max(0, Math.min(total, rem)) / total) * ch; }
-
+  function svgTxt(x, y, content, attrs) {
+    const t = svgEl('text', { x, y, 'font-size': '9.5', fill: 'var(--text-muted)', ...attrs });
+    t.textContent = content;
+    return t;
+  }
+  function makeSvg(W, H) {
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
     svg.style.cssText = 'width:100%;height:auto;display:block;';
+    return svg;
+  }
 
-    // Subtle horizontal grid lines (at 25%, 50%, 75%)
-    [0.25, 0.5, 0.75].forEach(frac => {
-      svg.appendChild(svgEl('line', {
-        x1: PL, y1: PT + ch * (1 - frac), x2: W - PR, y2: PT + ch * (1 - frac),
-        stroke: 'var(--border)', 'stroke-width': '0.5', opacity: '0.5',
-      }));
+  // ── Velocity chart ──────────────────────────────────────────────────────
+  const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function fmtDate(iso) { const [,m,d] = iso.split('-'); return `${+d} ${MONTHS[+m-1]}`; }
+
+  let velMetric = 'tasks';
+  const velContainer = document.getElementById('velocity-chart');
+  const velEmpty     = document.getElementById('velocity-empty');
+  const hoursBtnEl   = document.getElementById('vel-hours-btn');
+
+  // Hide hours toggle if no sprint has hour data
+  const hasHours = VEL.some(s => s.hours_total > 0);
+  if (!hasHours && hoursBtnEl) hoursBtnEl.style.display = 'none';
+
+  function drawVelocity(metric) {
+    if (!velContainer) return;
+    velContainer.innerHTML = '';
+
+    const eligible = VEL.filter(s => s.tasks_total > 0 || s.tasks_done > 0);
+    if (eligible.length === 0) {
+      if (velEmpty) velEmpty.style.display = '';
+      return;
+    }
+    if (velEmpty) velEmpty.style.display = 'none';
+
+    const values = eligible.map(s => metric === 'hours' ? s.hours_done : s.tasks_done);
+    const maxVal = Math.max(...values, 1);
+    const avg    = values.reduce((a, b) => a + b, 0) / values.length;
+
+    const W = 520, H = 150;
+    const PL = 36, PR = 40, PT = 16, PB = 36;
+    const cw = W - PL - PR, ch = H - PT - PB;
+    const n = eligible.length;
+    const slotW = cw / n;
+    const barW  = Math.max(Math.min(slotW * 0.55, 44), 8);
+
+    function xC(i)  { return PL + slotW * i + slotW / 2; }
+    function yV(v)  { return PT + (1 - v / maxVal) * ch; }
+
+    const svg = makeSvg(W, H);
+
+    // Horizontal grid (25 / 50 / 75 / 100%)
+    [0.25, 0.5, 0.75, 1].forEach(f => {
+      const yy = PT + (1 - f) * ch;
+      svg.appendChild(svgEl('line', { x1: PL, y1: yy, x2: W - PR, y2: yy, stroke: 'var(--border)', 'stroke-width': f === 1 ? '1' : '0.5', opacity: '0.6' }));
+      const labelVal = metric === 'hours'
+        ? (Math.round(maxVal * f * 10) / 10) + 'h'
+        : Math.round(maxVal * f);
+      svg.appendChild(svgTxt(PL - 4, yy, labelVal, { 'text-anchor': 'end', 'dominant-baseline': 'middle' }));
     });
 
-    // Baseline (y = 0 remaining) and top (y = total)
-    [0, total].forEach(rem => {
-      svg.appendChild(svgEl('line', {
-        x1: PL, y1: yOf(rem), x2: W - PR, y2: yOf(rem),
-        stroke: 'var(--border)', 'stroke-width': '1',
-      }));
+    // Baseline
+    svg.appendChild(svgEl('line', { x1: PL, y1: PT + ch, x2: W - PR, y2: PT + ch, stroke: 'var(--border)', 'stroke-width': '1' }));
+
+    // Average line + label
+    if (eligible.length > 1) {
+      const avgY = yV(avg);
+      svg.appendChild(svgEl('line', { x1: PL, y1: avgY, x2: W - PR, y2: avgY, stroke: 'var(--accent)', 'stroke-width': '1.5', 'stroke-dasharray': '5 3', opacity: '0.7' }));
+      const avgLabel = metric === 'hours'
+        ? `∅ ${Math.round(avg * 10) / 10}h`
+        : `∅ ${Math.round(avg * 10) / 10}`;
+      svg.appendChild(svgTxt(W - PR + 4, avgY, avgLabel, { 'text-anchor': 'start', 'dominant-baseline': 'middle', fill: 'var(--accent)', 'font-size': '8.5', 'font-weight': '600' }));
+    }
+
+    // Bars
+    eligible.forEach((sprint, i) => {
+      const v   = values[i];
+      const cx  = xC(i);
+      const bx  = cx - barW / 2;
+      const barH = Math.max((v / maxVal) * ch, v > 0 ? 2 : 0);
+      const by  = PT + ch - barH;
+      const opacity = sprint.status === 'active' ? '0.45' : '0.85';
+
+      const rect = svgEl('rect', { x: bx, y: by, width: barW, height: barH, rx: '3', fill: 'var(--accent)', opacity });
+      const titleEl = svgEl('title', {});
+      const unit = metric === 'hours' ? 'h' : ' tareas';
+      titleEl.textContent = `${sprint.name}: ${v}${unit}`;
+      rect.appendChild(titleEl);
+      svg.appendChild(rect);
+
+      // Value label above bar
+      if (v > 0) {
+        const insideBar = barH > 20;
+        const labelY = insideBar ? by + 13 : by - 4;
+        const displayVal = metric === 'hours' ? v + 'h' : String(v);
+        svg.appendChild(svgTxt(cx, labelY, displayVal, {
+          'text-anchor': 'middle',
+          fill: insideBar ? '#fff' : 'var(--text)',
+          'font-size': '9', 'font-weight': '700',
+          'dominant-baseline': insideBar ? 'auto' : 'auto',
+        }));
+      }
+
+      // X-axis sprint label — split at space if too long
+      const words = sprint.label.split(' ');
+      if (words.length > 1 && slotW < 70) {
+        // Two-line label
+        const mid = Math.ceil(words.length / 2);
+        const l1 = words.slice(0, mid).join(' ');
+        const l2 = words.slice(mid).join(' ');
+        svg.appendChild(svgTxt(cx, H - 18, l1, { 'text-anchor': 'middle' }));
+        svg.appendChild(svgTxt(cx, H - 6,  l2, { 'text-anchor': 'middle' }));
+      } else {
+        svg.appendChild(svgTxt(cx, H - 8, sprint.label, { 'text-anchor': 'middle' }));
+      }
     });
 
-    // Today marker
+    velContainer.appendChild(svg);
+  }
+
+  window.switchVelMetric = function (metric, btn) {
+    velMetric = metric;
+    document.querySelectorAll('.vel-btn').forEach(b => b.classList.remove('vel-btn-active'));
+    btn.classList.add('vel-btn-active');
+    drawVelocity(metric);
+  };
+
+  drawVelocity(velMetric);
+
+  // ── Burndown charts ─────────────────────────────────────────────────────
+  if (!BD || !Object.keys(BD).length) return;
+
+  function drawBurndown(container, data) {
+    const W = 520, H = 130;
+    const PL = 32, PR = 12, PT = 10, PB = 26;
+    const cw = W - PL - PR, ch = H - PT - PB;
+
+    const { total, actual, start, end, today } = data;
+    const toMs    = s => new Date(s + 'T00:00:00').getTime();
+    const startMs = toMs(start), endMs = toMs(end), rangeMs = endMs - startMs || 1;
+
+    function xOf(iso) { return PL + Math.max(0, Math.min(1, (toMs(iso) - startMs) / rangeMs)) * cw; }
+    function yOf(rem) { return PT + (1 - Math.max(0, Math.min(total, rem)) / total) * ch; }
+
+    const svg = makeSvg(W, H);
+
+    [0.25, 0.5, 0.75].forEach(f => svg.appendChild(svgEl('line', {
+      x1: PL, y1: PT + ch * (1-f), x2: W-PR, y2: PT + ch * (1-f),
+      stroke: 'var(--border)', 'stroke-width': '0.5', opacity: '0.5',
+    })));
+    [0, total].forEach(r => svg.appendChild(svgEl('line', {
+      x1: PL, y1: yOf(r), x2: W-PR, y2: yOf(r), stroke: 'var(--border)', 'stroke-width': '1',
+    })));
+
     if (today >= start && today <= end) {
-      const tx = xOf(today);
       svg.appendChild(svgEl('line', {
-        x1: tx, y1: PT, x2: tx, y2: PT + ch,
-        stroke: 'var(--warning, #f59e0b)', 'stroke-width': '1.5', 'stroke-dasharray': '4 3', opacity: '0.8',
+        x1: xOf(today), y1: PT, x2: xOf(today), y2: PT+ch,
+        stroke: 'var(--warning,#f59e0b)', 'stroke-width': '1.5', 'stroke-dasharray': '4 3', opacity: '0.8',
       }));
     }
 
-    // Ideal line (start→end, total→0)
     svg.appendChild(svgEl('line', {
       x1: xOf(start), y1: yOf(total), x2: xOf(end), y2: yOf(0),
       stroke: 'var(--text-muted)', 'stroke-width': '1.5', 'stroke-dasharray': '5 4', opacity: '0.55',
     }));
 
-    // Actual area fill
     if (actual.length >= 2) {
-      const firstX = xOf(actual[0][0]);
-      const lastX  = xOf(actual[actual.length - 1][0]);
-      const pts = actual.map(([d, r]) => `${xOf(d)},${yOf(r)}`).join(' ');
-      const d = `M ${firstX},${yOf(actual[0][1])} L ${pts.split(' ').slice(1).join(' ')} L ${lastX},${yOf(0)} L ${firstX},${yOf(0)} Z`;
-      svg.appendChild(svgEl('path', { d, fill: 'var(--accent)', opacity: '0.09' }));
-    }
-
-    // Actual polyline
-    if (actual.length >= 2) {
-      const pts = actual.map(([d, r]) => `${xOf(d)},${yOf(r)}`).join(' ');
+      const fX = xOf(actual[0][0]), lX = xOf(actual[actual.length-1][0]);
+      const pathPts = actual.map(([d,r]) => `${xOf(d)},${yOf(r)}`).join(' L ');
+      svg.appendChild(svgEl('path', {
+        d: `M ${fX},${yOf(actual[0][1])} L ${pathPts.replace(/^[^ ]+ /, '')} L ${lX},${yOf(0)} L ${fX},${yOf(0)} Z`,
+        fill: 'var(--accent)', opacity: '0.09',
+      }));
       svg.appendChild(svgEl('polyline', {
-        points: pts, fill: 'none',
-        stroke: 'var(--accent)', 'stroke-width': '2',
+        points: actual.map(([d,r]) => `${xOf(d)},${yOf(r)}`).join(' '),
+        fill: 'none', stroke: 'var(--accent)', 'stroke-width': '2',
         'stroke-linecap': 'round', 'stroke-linejoin': 'round',
       }));
     }
 
-    // Last actual dot
     if (actual.length > 0) {
-      const [ld, lr] = actual[actual.length - 1];
-      svg.appendChild(svgEl('circle', {
-        cx: xOf(ld), cy: yOf(lr), r: '3.5',
-        fill: 'var(--accent)', stroke: 'var(--bg2)', 'stroke-width': '2',
-      }));
+      const [ld, lr] = actual[actual.length-1];
+      svg.appendChild(svgEl('circle', { cx: xOf(ld), cy: yOf(lr), r: '3.5', fill: 'var(--accent)', stroke: 'var(--bg2)', 'stroke-width': '2' }));
     }
 
-    // Y-axis labels
-    function txt(x, y, content, anchor) {
-      const t = svgEl('text', { x, y, 'font-size': '9.5', fill: 'var(--text-muted)', 'text-anchor': anchor || 'end', 'dominant-baseline': 'middle' });
-      t.textContent = content;
-      return t;
-    }
-    svg.appendChild(txt(PL - 4, yOf(total),  total, 'end'));
-    svg.appendChild(txt(PL - 4, yOf(0),       '0',   'end'));
-
-    // X-axis labels
-    function xtxt(iso, anchor) {
-      const t = svgEl('text', { x: xOf(iso), y: H - 4, 'font-size': '9.5', fill: 'var(--text-muted)', 'text-anchor': anchor });
-      t.textContent = fmtDate(iso);
-      return t;
-    }
-    svg.appendChild(xtxt(start, 'start'));
-    svg.appendChild(xtxt(end,   'end'));
+    svg.appendChild(svgTxt(PL-4, yOf(total), total, { 'text-anchor': 'end', 'dominant-baseline': 'middle' }));
+    svg.appendChild(svgTxt(PL-4, yOf(0),     '0',   { 'text-anchor': 'end', 'dominant-baseline': 'middle' }));
+    svg.appendChild(svgTxt(PL,     H-4, fmtDate(start), { 'text-anchor': 'start' }));
+    svg.appendChild(svgTxt(W-PR,   H-4, fmtDate(end),   { 'text-anchor': 'end' }));
 
     container.appendChild(svg);
   }
 
-  function paceLabel(pace) {
-    return {
-      ahead:    { text: 'Por delante', color: 'var(--success, #22c55e)' },
-      on_track: { text: 'Al día',      color: 'var(--warning, #f59e0b)' },
-      behind:   { text: 'Con retraso', color: 'var(--danger, #ef4444)'  },
-      done:     { text: 'Completado',  color: 'var(--success, #22c55e)' },
-    }[pace] || { text: '', color: '' };
-  }
+  const PACE_LABEL = {
+    ahead:    { text: 'Por delante', color: 'var(--success,#22c55e)' },
+    on_track: { text: 'Al día',      color: 'var(--warning,#f59e0b)' },
+    behind:   { text: 'Con retraso', color: 'var(--danger,#ef4444)'  },
+    done:     { text: 'Completado',  color: 'var(--success,#22c55e)' },
+  };
 
-  for (const [sprintPk, data] of Object.entries(DATA)) {
-    const metaEl  = document.getElementById('bd-meta-'  + sprintPk);
-    const chartEl = document.getElementById('bd-chart-' + sprintPk);
+  for (const [pk, data] of Object.entries(BD)) {
+    const metaEl  = document.getElementById('bd-meta-'  + pk);
+    const chartEl = document.getElementById('bd-chart-' + pk);
     if (!metaEl || !chartEl) continue;
 
-    // Replace simple task count with richer stats
-    const pl = paceLabel(data.pace);
+    const pl = PACE_LABEL[data.pace] || {};
     metaEl.innerHTML =
       `<span class="text-muted text-sm">${data.completed}/${data.total} tareas completadas</span>` +
       (pl.text ? `<span class="burndown-pace" style="color:${pl.color};">${pl.text}</span>` : '');
 
     drawBurndown(chartEl, data);
 
-    // Legend
     const legend = document.createElement('div');
     legend.className = 'burndown-legend';
     legend.innerHTML =
