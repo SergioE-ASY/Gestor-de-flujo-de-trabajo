@@ -200,6 +200,35 @@ def task_update_status(request, project_pk, pk, project=None, membership=None):
 
 @login_required
 @require_POST
+@project_permission(can_update_task_status, pk_kwarg='project_pk')
+def task_reorder(request, project_pk, project=None, membership=None):
+    import json
+    from django.db import transaction
+
+    try:
+        data = json.loads(request.body)
+        task_id = data['task_id']
+        new_status = data['status']
+        order = data.get('order', [])
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return JsonResponse({'error': 'Invalid data'}, status=400)
+
+    if new_status not in dict(Task.STATUS_CHOICES):
+        return JsonResponse({'error': 'Invalid status'}, status=400)
+
+    task = get_object_or_404(Task, pk=task_id, project=project)
+
+    with transaction.atomic():
+        task.status = new_status
+        task.save()
+        for i, tid in enumerate(order):
+            Task.objects.filter(pk=tid, project=project).update(position=i)
+
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
 @require_project_member(pk_kwarg='project_pk')
 def comment_create(request, project_pk, task_pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=task_pk, project=project)

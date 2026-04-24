@@ -113,36 +113,106 @@ async function markAllRead() {
   fetchNotifCount();
 }
 
-// ─── Kanban drag & drop (status update) ───
+// ─── Kanban drag & drop (persistent position + status) ───
 function initKanban() {
+  let dragging = null;
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'drop-placeholder';
+
+  function getInsertBefore(col, clientY) {
+    const cards = Array.from(col.querySelectorAll('.task-card:not(.dragging)'));
+    for (const card of cards) {
+      const { top, height } = card.getBoundingClientRect();
+      if (clientY < top + height / 2) return card;
+    }
+    return null;
+  }
+
+  function updateColCounts() {
+    document.querySelectorAll('.board-col').forEach(col => {
+      const count = col.querySelectorAll('.board-tasks .task-card').length;
+      const el = col.querySelector('.col-count');
+      if (el) el.textContent = count;
+    });
+  }
+
   document.querySelectorAll('.board-tasks').forEach(col => {
-    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    let enterDepth = 0;
+
+    col.addEventListener('dragenter', e => {
+      if (!dragging) return;
+      enterDepth++;
+      col.classList.add('drag-over');
+    });
+
+    col.addEventListener('dragleave', e => {
+      if (!dragging) return;
+      enterDepth--;
+      if (enterDepth <= 0) {
+        enterDepth = 0;
+        col.classList.remove('drag-over');
+        if (placeholder.parentNode === col) placeholder.remove();
+      }
+    });
+
+    col.addEventListener('dragover', e => {
+      if (!dragging) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const ref = getInsertBefore(col, e.clientY);
+      // Insert before the first card that the cursor is above, or before the add-link
+      const addLink = col.querySelector('a[href*="status="]');
+      col.insertBefore(placeholder, ref || addLink || null);
+    });
+
     col.addEventListener('drop', async e => {
       e.preventDefault();
+      enterDepth = 0;
       col.classList.remove('drag-over');
-      const taskId = e.dataTransfer.getData('text/plain');
-      const projectId = col.dataset.project;
-      const newStatus = col.dataset.status;
-      if (!taskId || !newStatus) return;
+      if (!dragging) return;
 
-      const fd = new FormData();
-      fd.append('status', newStatus);
-      const resp = await fetch(`/projects/${projectId}/tasks/${taskId}/status/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest' },
-        body: fd,
-      });
-      if (resp.ok) location.reload();
+      col.insertBefore(dragging, placeholder);
+      placeholder.remove();
+
+      const newStatus = col.dataset.status;
+      const projectId = col.dataset.project;
+      const order = Array.from(col.querySelectorAll('.task-card')).map(c => c.dataset.taskId);
+
+      updateColCounts();
+
+      try {
+        const resp = await fetch(`/projects/${projectId}/tasks/reorder/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrf(),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify({ task_id: dragging.dataset.taskId, status: newStatus, order }),
+        });
+        if (!resp.ok) location.reload();
+      } catch {
+        location.reload();
+      }
     });
   });
 
   document.querySelectorAll('.task-card[draggable]').forEach(card => {
     card.addEventListener('dragstart', e => {
+      dragging = card;
+      card.classList.add('dragging');
       e.dataTransfer.setData('text/plain', card.dataset.taskId);
-      card.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => { card.style.opacity = '0.4'; }, 0);
     });
-    card.addEventListener('dragend', () => card.style.opacity = '1');
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '1';
+      card.classList.remove('dragging');
+      placeholder.remove();
+      document.querySelectorAll('.board-tasks').forEach(c => c.classList.remove('drag-over'));
+      dragging = null;
+    });
   });
 }
 if (document.querySelector('.board')) initKanban();

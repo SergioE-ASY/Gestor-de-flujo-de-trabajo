@@ -849,3 +849,14 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; 
   position:absolute; bottom:0; right:0;
   border-color:var(--bg2);
 }
+
+/* ── Kanban drag & drop ──────────────────────────────────────────────────── */
+.task-card.dragging { opacity:0.4; }
+.drop-placeholder {
+  height:72px;
+  border:2px dashed var(--accent);
+  border-radius:var(--radius-sm);
+  background:var(--accent-light);
+  margin-bottom:8px;
+  pointer-events:none;
+}
