@@ -932,3 +932,28 @@ kbd {
   font-size:0.7rem; color:var(--text-muted);
 }
 .cmd-footer kbd { font-size:0.62rem; min-width:18px; height:18px; }
+
+/* ── Sprint burndown chart ───────────────────────────────────────────────── */
+.burndown-meta {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:10px;
+}
+.burndown-pace {
+  font-size:0.75rem; font-weight:600;
+  display:flex; align-items:center; gap:4px;
+}
+.burndown-chart {
+  margin: 0 -20px;
+  border-top:1px solid var(--border);
+  background:var(--bg3);
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:12px 16px 8px;
+}
+.burndown-legend {
+  display:flex; gap:16px; justify-content:flex-end;
+  padding:4px 0 0;
+}
+.bd-legend-item {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.72rem; color:var(--text-muted);
+}

@@ -68,9 +68,74 @@ def project_create(request):
     })
 
 
+def _sprint_burndown(sprint):
+    """Return burndown data dict for a sprint, or None if insufficient data."""
+    from datetime import timedelta
+    from django.utils import timezone
+
+    if not sprint.start_date or not sprint.end_date:
+        return None
+
+    tasks = list(sprint.tasks.values('id', 'completed_at'))
+    total = len(tasks)
+    if total == 0:
+        return None
+
+    start = sprint.start_date.date()
+    end = sprint.end_date.date()
+    if end <= start:
+        return None
+
+    today = timezone.now().date()
+    cutoff = min(end, today)
+
+    # Day-by-day actual remaining (from sprint start to today/end)
+    actual = []
+    d = start
+    while d <= cutoff:
+        completed = sum(
+            1 for t in tasks
+            if t['completed_at'] and t['completed_at'].date() <= d
+        )
+        actual.append([d.isoformat(), total - completed])
+        d += timedelta(days=1)
+
+    completed_now = sum(
+        1 for t in tasks
+        if t['completed_at'] and t['completed_at'].date() <= cutoff
+    )
+    remaining = total - completed_now
+
+    # Pace: compare actual remaining vs ideal remaining at today
+    total_days = (end - start).days
+    days_elapsed = min((today - start).days, total_days)
+    ideal_now = total * (1 - days_elapsed / total_days)
+    diff = remaining - ideal_now
+    if sprint.status == 'completed':
+        pace = 'done'
+    elif diff < -0.5:
+        pace = 'ahead'
+    elif diff > 0.5:
+        pace = 'behind'
+    else:
+        pace = 'on_track'
+
+    return {
+        'total': total,
+        'completed': completed_now,
+        'remaining': remaining,
+        'pace': pace,
+        'start': start.isoformat(),
+        'end': end.isoformat(),
+        'today': today.isoformat(),
+        'actual': actual,
+    }
+
+
 @login_required
 @require_project_member()
 def project_detail(request, pk, project=None, membership=None):
+    import json
     sprints = project.sprints.all().order_by('-start_date')
     members = project.members.select_related('user').all()
     tags = project.tags.all()
@@ -105,6 +170,12 @@ def project_detail(request, pk, project=None, membership=None):
         .order_by('-logged')
     )
 
+    burndown_data = {}
+    for sprint in sprints:
+        bd = _sprint_burndown(sprint)
+        if bd:
+            burndown_data[str(sprint.pk)] = bd
+
     return render(request, 'projects/project_detail.html', {
         'project': project,
         'membership': membership,
@@ -118,6 +189,7 @@ def project_detail(request, pk, project=None, membership=None):
         'hours_by_member': hours_by_member,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
+        'burndown_json': json.dumps(burndown_data),
     })
 
 
