@@ -13,4 +13,5 @@ urlpatterns = [
     path('projects/<uuid:pk>/hours/<uuid:user_pk>/', views.member_hour_history, name='member_hour_history'),
     path('projects/<uuid:pk>/sprints/new/', views.sprint_create, name='sprint_create'),
     path('projects/<uuid:pk>/sprints/<uuid:sprint_pk>/edit/', views.sprint_update, name='sprint_update'),
+    path('projects/<uuid:pk>/roadmap/', views.project_roadmap, name='project_roadmap'),
 ]

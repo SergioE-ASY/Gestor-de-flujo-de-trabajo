@@ -38,6 +38,7 @@ def task_create(request, project_pk, project=None, membership=None):
             type=request.POST.get('type', 'task'),
             status=request.POST.get('status', 'backlog'),
             priority=request.POST.get('priority', 'medium'),
+            start_date=request.POST.get('start_date') or None,
             due_date=request.POST.get('due_date') or None,
             estimated_hours=_parse_hours(request.POST) or None,
             task_responsible_id=request.POST.get('task_responsible') or None,
@@ -113,6 +114,7 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         task.type = request.POST.get('type', task.type)
         task.status = request.POST.get('status', task.status)
         task.priority = request.POST.get('priority', task.priority)
+        task.start_date = request.POST.get('start_date') or None
         task.due_date = request.POST.get('due_date') or None
         new_hours = _parse_hours(request.POST) or None
         hours_changed = str(new_hours) != str(task.estimated_hours)
