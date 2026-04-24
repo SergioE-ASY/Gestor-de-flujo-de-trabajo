@@ -183,7 +183,7 @@ class CommentListCreateView(_ProjectTaskMixin, generics.ListCreateAPIView):
         return get_object_or_404(Task, pk=self.kwargs['task_pk'], project=project)
 
     def get_queryset(self):
-        return self._get_task().comments.select_related('user')
+        return self._get_task().comments.filter(deleted_at__isnull=True).select_related('user')
 
     def perform_create(self, serializer):
         serializer.save(task=self._get_task(), user=self.request.user)
@@ -198,7 +198,10 @@ class CommentDestroyView(_ProjectTaskMixin, generics.DestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         from rest_framework.exceptions import PermissionDenied
+        from django.utils import timezone
         comment = self.get_object()
         if comment.user != request.user:
             raise PermissionDenied('Solo puedes eliminar tus propios comentarios.')
-        return super().destroy(request, *args, **kwargs)
+        comment.deleted_at = timezone.now()
+        comment.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
