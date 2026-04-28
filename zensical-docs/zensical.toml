@@ -17,6 +17,8 @@ nav = [
 
 [project.theme]
 language = "es"
+variant = "classic"
+favicon = "easy_icono.png"
 
 features = [
   "announce.dismiss",
@@ -38,11 +40,17 @@ features = [
 ]
 
 [[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
 scheme = "default"
+primary = "teal"
+accent = "blue"
 toggle.icon = "lucide/sun"
 toggle.name = "Cambiar a modo oscuro"
 
 [[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
 scheme = "slate"
+primary = "teal"
+accent = "blue"
 toggle.icon = "lucide/moon"
 toggle.name = "Cambiar a modo claro"
