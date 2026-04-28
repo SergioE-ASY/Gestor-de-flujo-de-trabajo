@@ -203,6 +203,28 @@ def project_detail(request, pk, project=None, membership=None):
         .order_by('-logged')
     )
 
+    from django.db.models import Count
+
+    status_dist = {
+        e['status']: e['count']
+        for e in project.tasks.values('status').annotate(count=Count('id'))
+    }
+
+    assignee_rows = list(
+        project.tasks
+        .values('assignee__id', 'assignee__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+    assignee_dist = [
+        {
+            'name': r['assignee__name'] or 'Sin asignar',
+            'id': str(r['assignee__id']) if r['assignee__id'] else None,
+            'count': r['count'],
+        }
+        for r in assignee_rows
+    ]
+
     burndown_data = {}
     for sprint in sprints:
         bd = _sprint_burndown(sprint)
