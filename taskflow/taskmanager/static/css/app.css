@@ -932,3 +932,56 @@ kbd {
   font-size:0.7rem; color:var(--text-muted);
 }
 .cmd-footer kbd { font-size:0.62rem; min-width:18px; height:18px; }
+
+/* ── Velocity chart ──────────────────────────────────────────────────────── */
+.vel-btn {
+  padding:4px 10px; border-radius:5px; font-size:0.78rem; font-weight:500;
+  border:1px solid var(--border); background:var(--bg3); color:var(--text-muted);
+  cursor:pointer; transition:background 0.15s, color 0.15s;
+}
+.vel-btn:hover       { background:var(--bg2); color:var(--text); }
+.vel-btn-active      { background:var(--accent); color:#fff; border-color:var(--accent); }
+.vel-legend {
+  display:flex; gap:16px; align-items:center; padding-top:10px; flex-wrap:wrap;
+}
+.vel-legend-item {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.72rem; color:var(--text-muted);
+}
+.vel-legend-swatch {
+  width:10px; height:10px; border-radius:2px; background:var(--accent); flex-shrink:0;
+}
+.vel-legend-avg { font-family:var(--font-mono); letter-spacing:0.02em; }
+
+/* ── Sprint burndown chart ───────────────────────────────────────────────── */
+.burndown-meta {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:10px;
+}
+.burndown-pace {
+  font-size:0.75rem; font-weight:600;
+  display:flex; align-items:center; gap:4px;
+}
+.burndown-chart {
+  margin: 0 -20px;
+  border-top:1px solid var(--border);
+  background:var(--bg3);
+  border-radius:0 0 var(--radius) var(--radius);
+  padding:12px 16px 8px;
+}
+.burndown-legend {
+  display:flex; gap:16px; justify-content:flex-end;
+  padding:4px 0 0;
+}
+.bd-legend-item {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.72rem; color:var(--text-muted);
+}
+
+/* ── Filter option count badge (ANA-03) ──────────────────────────────────── */
+.flt-opt-count {
+  margin-left:auto; padding:1px 7px;
+  background:var(--bg3); border-radius:10px;
+  font-size:0.68rem; font-weight:600; color:var(--text-muted);
+  flex-shrink:0; line-height:1.6;
+}

@@ -68,9 +68,107 @@ def project_create(request):
     })
 
 
+def _sprint_burndown(sprint):
+    """Return burndown data dict for a sprint, or None if insufficient data."""
+    from datetime import timedelta
+    from django.utils import timezone
+
+    if not sprint.start_date or not sprint.end_date:
+        return None
+
+    tasks = list(sprint.tasks.values('id', 'completed_at'))
+    total = len(tasks)
+    if total == 0:
+        return None
+
+    start = sprint.start_date.date()
+    end = sprint.end_date.date()
+    if end <= start:
+        return None
+
+    today = timezone.now().date()
+    cutoff = min(end, today)
+
+    # Day-by-day actual remaining (from sprint start to today/end)
+    actual = []
+    d = start
+    while d <= cutoff:
+        completed = sum(
+            1 for t in tasks
+            if t['completed_at'] and t['completed_at'].date() <= d
+        )
+        actual.append([d.isoformat(), total - completed])
+        d += timedelta(days=1)
+
+    completed_now = sum(
+        1 for t in tasks
+        if t['completed_at'] and t['completed_at'].date() <= cutoff
+    )
+    remaining = total - completed_now
+
+    # Pace: compare actual remaining vs ideal remaining at today
+    total_days = (end - start).days
+    days_elapsed = min((today - start).days, total_days)
+    ideal_now = total * (1 - days_elapsed / total_days)
+    diff = remaining - ideal_now
+    if sprint.status == 'completed':
+        pace = 'done'
+    elif diff < -0.5:
+        pace = 'ahead'
+    elif diff > 0.5:
+        pace = 'behind'
+    else:
+        pace = 'on_track'
+
+    return {
+        'total': total,
+        'completed': completed_now,
+        'remaining': remaining,
+        'pace': pace,
+        'start': start.isoformat(),
+        'end': end.isoformat(),
+        'today': today.isoformat(),
+        'actual': actual,
+    }
+
+
+def _velocity_data(sprints):
+    """Return list of velocity entries for completed/active sprints, oldest-first, max 8."""
+    from django.utils import timezone
+
+    eligible = sorted(
+        [s for s in sprints if s.status in ('completed', 'active')],
+        key=lambda s: s.start_date or timezone.now(),
+    )
+    eligible = eligible[-8:]  # keep most recent 8
+
+    result = []
+    for sprint in eligible:
+        tasks = list(sprint.tasks.values('status', 'estimated_hours'))
+        done = [t for t in tasks if t['status'] == 'done']
+
+        hours_done = sum(float(t['estimated_hours']) for t in done if t['estimated_hours'])
+        hours_total = sum(float(t['estimated_hours']) for t in tasks if t['estimated_hours'])
+
+        label = sprint.name if len(sprint.name) <= 12 else sprint.name[:11] + '…'
+
+        result.append({
+            'name': sprint.name,
+            'label': label,
+            'status': sprint.status,
+            'tasks_done': len(done),
+            'tasks_total': len(tasks),
+            'hours_done': round(hours_done, 1),
+            'hours_total': round(hours_total, 1),
+        })
+
+    return result
+
+
 @login_required
 @require_project_member()
 def project_detail(request, pk, project=None, membership=None):
+    import json
     sprints = project.sprints.all().order_by('-start_date')
     members = project.members.select_related('user').all()
     tags = project.tags.all()
@@ -105,6 +203,31 @@ def project_detail(request, pk, project=None, membership=None):
         .order_by('-logged')
     )
 
+    from django.db.models import Count
+
+    assignee_rows = list(
+        project.tasks
+        .values('assignee__id', 'assignee__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+    assignee_dist = [
+        {
+            'name': r['assignee__name'] or 'Sin asignar',
+            'id': str(r['assignee__id']) if r['assignee__id'] else None,
+            'count': r['count'],
+        }
+        for r in assignee_rows
+    ]
+
+    burndown_data = {}
+    for sprint in sprints:
+        bd = _sprint_burndown(sprint)
+        if bd:
+            burndown_data[str(sprint.pk)] = bd
+
+    velocity_data = _velocity_data(list(sprints))
+
     return render(request, 'projects/project_detail.html', {
         'project': project,
         'membership': membership,
@@ -118,6 +241,9 @@ def project_detail(request, pk, project=None, membership=None):
         'hours_by_member': hours_by_member,
         'tasks_by_status': tasks_by_status,
         'active_sprint': sprints.filter(status='active').first(),
+        'burndown_json': json.dumps(burndown_data),
+        'velocity_json': json.dumps(velocity_data),
+        'assignee_dist_json': json.dumps(assignee_dist),
     })
 
 
