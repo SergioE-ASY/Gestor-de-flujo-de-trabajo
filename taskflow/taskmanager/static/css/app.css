@@ -977,3 +977,11 @@ kbd {
   display:flex; align-items:center; gap:5px;
   font-size:0.72rem; color:var(--text-muted);
 }
+
+/* ── Filter option count badge (ANA-03) ──────────────────────────────────── */
+.flt-opt-count {
+  margin-left:auto; padding:1px 7px;
+  background:var(--bg3); border-radius:10px;
+  font-size:0.68rem; font-weight:600; color:var(--text-muted);
+  flex-shrink:0; line-height:1.6;
+}

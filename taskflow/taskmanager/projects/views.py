@@ -205,11 +205,6 @@ def project_detail(request, pk, project=None, membership=None):
 
     from django.db.models import Count
 
-    status_dist = {
-        e['status']: e['count']
-        for e in project.tasks.values('status').annotate(count=Count('id'))
-    }
-
     assignee_rows = list(
         project.tasks
         .values('assignee__id', 'assignee__name')
@@ -248,6 +243,7 @@ def project_detail(request, pk, project=None, membership=None):
         'active_sprint': sprints.filter(status='active').first(),
         'burndown_json': json.dumps(burndown_data),
         'velocity_json': json.dumps(velocity_data),
+        'assignee_dist_json': json.dumps(assignee_dist),
     })
 
 

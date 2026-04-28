@@ -93,21 +93,6 @@
 <!-- Board Tab -->
 <div id="tab-board">
 
-  <!-- ANA-03: Distribution charts -->
-  <div class="dist-charts">
-    <div class="dist-card">
-      <div class="dist-card-title">Por estado</div>
-      <div class="dist-donut-wrap">
-        <div id="dist-status-chart"></div>
-        <div id="dist-status-legend" class="dist-legend"></div>
-      </div>
-    </div>
-    <div class="dist-card">
-      <div class="dist-card-title">Por asignado <span class="dist-hint">· clic para filtrar</span></div>
-      <div id="dist-assignee-chart"></div>
-    </div>
-  </div>
-
   <!-- Inline filter row -->
   <div class="flt-row">
 
@@ -1015,6 +1000,47 @@ function openEditMember(memberPk, name, currentRole) {
 
     if (clearBtn) clearBtn.style.display = anyActive ? '' : 'none';
   }
+})();
+
+// ─── Filter option counts (ANA-03) ───────────────────────────────────────────
+(function () {
+  const ASSIGNEE_DIST = {{ assignee_dist_json|safe }};
+
+  function addBadge(opt, n) {
+    if (!n) return;
+    const b = document.createElement('span');
+    b.className = 'flt-opt-count';
+    b.textContent = n;
+    opt.appendChild(b);
+  }
+
+  // Assignee — counts from server data
+  const byAssignee = {};
+  ASSIGNEE_DIST.forEach(({ id, count }) => { byAssignee[id || '__none__'] = count; });
+  document.querySelectorAll('#menu-assignee .flt-opt[data-value]').forEach(opt => {
+    const v = opt.dataset.value;
+    if (v) addBadge(opt, byAssignee[v] || 0);
+  });
+
+  // Priority, sprint, tag — counts from rendered task cards
+  document.querySelectorAll('#menu-priority .flt-opt[data-value]').forEach(opt => {
+    addBadge(opt, document.querySelectorAll(`.task-card[data-priority="${opt.dataset.value}"]`).length);
+  });
+
+  document.querySelectorAll('#menu-sprint .flt-opt[data-value]').forEach(opt => {
+    const v = opt.dataset.value;
+    if (!v) return;
+    const sel = v === '__none__' ? '.task-card[data-sprint=""]' : `.task-card[data-sprint="${v}"]`;
+    addBadge(opt, document.querySelectorAll(sel).length);
+  });
+
+  document.querySelectorAll('#menu-tag .flt-opt[data-value]').forEach(opt => {
+    const v = opt.dataset.value;
+    if (!v) return;
+    const n = Array.from(document.querySelectorAll('.task-card'))
+      .filter(c => (c.dataset.tags || '').split(',').includes(v)).length;
+    addBadge(opt, n);
+  });
 })();
 </script>
 {% endblock %}
