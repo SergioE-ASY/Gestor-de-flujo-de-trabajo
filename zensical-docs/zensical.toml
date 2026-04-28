@@ -10,8 +10,10 @@ nav = [
   { "Proyectos" = "proyectos.md" },
   { "Tareas" = "tareas.md" },
   { "Sprints" = "sprints.md" },
+  { "Roadmap" = "roadmap.md" },
   { "Horas" = "horas.md" },
   { "Analítica" = "analitica.md" },
+  { "Atajos de teclado" = "atajos.md" },
   { "API REST" = "api.md" },
 ]
 

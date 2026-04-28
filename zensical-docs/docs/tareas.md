@@ -61,9 +61,17 @@ Una tarea puede tener subtareas. Para crearlas:
 !!! note
     Las subtareas no aparecen en el tablero principal — solo la tarea padre. Se gestionan desde el detalle de la tarea padre.
 
+## Markdown
+
+Las descripciones de tarea y los comentarios se renderizan como **Markdown** (GitHub Flavored Markdown). Se soportan:
+
+- Negritas, cursivas, encabezados, listas, código en línea y bloques de código.
+- Saltos de línea automáticos.
+- El contenido se sanea con DOMPurify antes de mostrarse.
+
 ## Comentarios
 
-Cada tarea tiene un hilo de comentarios. Los comentarios soportan borrado suave (`deleted_at`) para mantener el historial.
+Cada tarea tiene un hilo de comentarios. Los comentarios admiten Markdown y soportan borrado suave (`deleted_at`) para mantener el historial.
 
 ## Adjuntos
 
@@ -78,6 +86,10 @@ Desde el detalle de la tarea puedes registrar horas de trabajo:
 - **Fecha** — Día al que corresponde el registro (por defecto, hoy).
 
 Las horas registradas se consolidan en la pestaña **Horas** del proyecto.
+
+## Borrado lógico
+
+Las tareas eliminadas no se borran permanentemente de la base de datos. Se marcan con una fecha en el campo `deleted_at` (borrado suave), lo que permite auditoría y recuperación si es necesario.
 
 ## Tablero kanban
 

@@ -47,6 +47,30 @@ Desde el detalle del proyecto encontrarás:
 - **Miembros** — Lista de miembros y sus roles.
 - **Etiquetas** — Etiquetas de color del proyecto.
 
+El botón **Roadmap** en la barra superior abre la vista de línea de tiempo del proyecto.
+
+## Perfiles de usuario
+
+Desde la lista de miembros o desde el avatar de un usuario asignado en una tarea, puedes ver el perfil público de cualquier miembro del proyecto.
+
+El perfil muestra:
+
+- Nombre, email e imagen de perfil.
+- Estado de actividad (ver más abajo).
+- Proyectos compartidos.
+
+## Estado de actividad
+
+Cada usuario tiene un indicador de actividad calculado automáticamente:
+
+| Estado | Condición |
+|--------|-----------|
+| 🟢 **En línea** | Activo en los últimos 5 minutos. |
+| 🟡 **Ausente** | Última actividad entre 5 y 30 minutos. |
+| ⚪ **Desconectado** | Sin actividad en los últimos 30 minutos. |
+
+El estado se actualiza en tiempo real en el encabezado del perfil y en la lista de miembros del proyecto.
+
 ## Filtros del tablero
 
 El tablero incluye filtros rápidos que se pueden combinar:
