@@ -1,166 +1,62 @@
 ---
-icon: lucide/rocket
+icon: lucide/layout-dashboard
 ---
 
-# Get started
+# E-asy — Gestor de flujo de trabajo
 
-For full documentation visit [zensical.org](https://zensical.org/docs/).
+El Gestor de Flujo de Trabajo es una plataforma de gestión de proyectos y tareas diseñada para equipos de desarrollo. Combina un tablero kanban, gestión de sprints, seguimiento de horas y analítica en una sola herramienta.
 
-## Commands
+## Funcionalidades principales
 
-* [`zensical new`][new] - Create a new project
-* [`zensical serve`][serve] - Start local web server
-* [`zensical build`][build] - Build your site
+<div class="grid cards" markdown>
 
-  [new]: https://zensical.org/docs/usage/new/
-  [serve]: https://zensical.org/docs/usage/preview/
-  [build]: https://zensical.org/docs/usage/build/
+- :material-folder-open: **Proyectos**
 
-## Examples
+    Organiza el trabajo en proyectos dentro de organizaciones. Cada proyecto tiene su propio tablero, lista de miembros, sprints y presupuesto de horas.
 
-### Admonitions
+- :material-checkbox-marked-circle: **Tareas**
 
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/)
+    Crea tareas de tipo *tarea*, *historia*, *bug*, *épica* o *subtarea*. Asígnalas a miembros, establece prioridades y fechas de vencimiento.
 
-!!! note
+- :material-lightning-bolt: **Sprints**
 
-    This is a **note** admonition. Use it to provide helpful information.
+    Planifica iteraciones con fechas de inicio y fin. Visualiza el progreso con el gráfico de burndown y mide la velocidad del equipo sprint a sprint.
 
-!!! warning
+- :material-clock-outline: **Horas**
 
-    This is a **warning** admonition. Be careful!
+    Registra horas por tarea. Define un presupuesto por proyecto y supervisa el consumo en tiempo real.
 
-### Details
+- :material-chart-bar: **Analítica**
 
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/#collapsible-blocks)
+    Gráficos de velocidad, burndown y distribución de tareas por estado y asignado, directamente en el panel del proyecto.
 
-??? info "Click to expand for more info"
-    
-    This content is hidden until you click to expand it.
-    Great for FAQs or long explanations.
+- :material-api: **API REST**
 
-## Code Blocks
+    API con autenticación JWT para integrar E-asy con herramientas externas.
 
-> Go to [documentation](https://zensical.org/docs/authoring/code-blocks/)
+</div>
 
-``` python hl_lines="2" title="Code blocks"
-def greet(name):
-    print(f"Hello, {name}!") # (1)!
+## Estructura general
 
-greet("Python")
+```
+Organización
+└── Proyecto  (clave: "TM")
+    ├── Miembros  (owner · manager · developer · viewer)
+    ├── Sprints   (planificado · activo · completado)
+    ├── Tareas    (TM-1, TM-2 …)
+    │   ├── Subtareas
+    │   ├── Comentarios
+    │   ├── Adjuntos
+    │   └── Registro de horas
+    └── Etiquetas
 ```
 
-1.  > Go to [documentation](https://zensical.org/docs/authoring/code-blocks/#code-annotations)
+## Tecnología
 
-    Code annotations allow to attach notes to lines of code.
-
-Code can also be highlighted inline: `#!python print("Hello, Python!")`.
-
-## Content tabs
-
-> Go to [documentation](https://zensical.org/docs/authoring/content-tabs/)
-
-=== "Python"
-
-    ``` python
-    print("Hello from Python!")
-    ```
-
-=== "Rust"
-
-    ``` rs
-    println!("Hello from Rust!");
-    ```
-
-## Diagrams
-
-> Go to [documentation](https://zensical.org/docs/authoring/diagrams/)
-
-``` mermaid
-graph LR
-  A[Start] --> B{Error?};
-  B -->|Yes| C[Hmm...];
-  C --> D[Debug];
-  D --> B;
-  B ---->|No| E[Yay!];
-```
-
-## Footnotes
-
-> Go to [documentation](https://zensical.org/docs/authoring/footnotes/)
-
-Here's a sentence with a footnote.[^1]
-
-Hover it, to see a tooltip.
-
-[^1]: This is the footnote.
-
-
-## Formatting
-
-> Go to [documentation](https://zensical.org/docs/authoring/formatting/)
-
-- ==This was marked (highlight)==
-- ^^This was inserted (underline)^^
-- ~~This was deleted (strikethrough)~~
-- H~2~O
-- A^T^A
-- ++ctrl+alt+del++
-
-## Icons, Emojis
-
-> Go to [documentation](https://zensical.org/docs/authoring/icons-emojis/)
-
-* :sparkles: `:sparkles:`
-* :rocket: `:rocket:`
-* :tada: `:tada:`
-* :memo: `:memo:`
-* :eyes: `:eyes:`
-
-## Maths
-
-> Go to [documentation](https://zensical.org/docs/authoring/math/)
-
-$$
-\cos x=\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k)!}x^{2k}
-$$
-
-!!! warning "Needs configuration"
-    Note that MathJax is included via a `script` tag on this page and is not
-    configured in the generated default configuration to avoid including it
-    in a pages that do not need it. See the documentation for details on how
-    to configure it on all your pages if they are more Maths-heavy than these
-    simple starter pages.
-
-<script id="MathJax-script" async src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>
-  window.MathJax = {
-    tex: {
-      inlineMath: [["\\(", "\\)"]],
-      displayMath: [["\\[", "\\]"]],
-      processEscapes: true,
-      processEnvironments: true
-    },
-    options: {
-      ignoreHtmlClass: ".*|",
-      processHtmlClass: "arithmatex"
-    }
-  };
-</script>
-
-## Task Lists
-
-> Go to [documentation](https://zensical.org/docs/authoring/lists/#using-task-lists)
-
-* [x] Install Zensical
-* [x] Configure `zensical.toml`
-* [x] Write amazing documentation
-* [ ] Deploy anywhere
-
-## Tooltips
-
-> Go to [documentation](https://zensical.org/docs/authoring/tooltips/)
-
-[Hover me][example]
-
-  [example]: https://example.com "I'm a tooltip!"
+| Capa | Tecnología |
+|------|-----------|
+| Backend | Django 5.0.4 + PostgreSQL |
+| Autenticación | JWT (SimpleJWT) + OTP (2FA) |
+| API | Django REST Framework |
+| Ficheros estáticos | WhiteNoise |
+| Exportación | openpyxl (Excel) |
