@@ -2,8 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
+import markdown
+from io import BytesIO
+try:
+    from xhtml2pdf import pisa
+except ImportError:
+    pass # Solo falla si no se instaló aún
+from .ai_summary_service import generate_executive_summary
 from .models import Project, ProjectMember, Sprint
 from .permissions import (
     can_edit_project, can_delete_project,
@@ -552,3 +560,42 @@ def project_create_ai_confirm(request):
 
     except Exception as e:
         return JsonResponse({'error': f'Error al crear el proyecto: {str(e)}'}, status=500)
+
+
+@login_required
+@require_project_member()
+def project_executive_summary_pdf(request, pk, project, membership):
+    """Genera un PDF con el resumen ejecutivo del proyecto vía IA."""
+    if not request.user.is_premium:
+        messages.error(request, "Esta función es exclusiva para usuarios Premium.")
+        return redirect('project_detail', pk=pk)
+    
+    # Obtener todas las tareas
+    tasks = project.tasks.select_related('assignee').all()
+    
+    # Generar Markdown con Gemini
+    markdown_text = generate_executive_summary(project, tasks)
+    
+    # Convertir Markdown a HTML
+    html_content = markdown.markdown(markdown_text, extensions=['extra', 'nl2br'])
+    
+    # Renderizar plantilla Django con el HTML
+    context = {
+        'project': project,
+        'summary_html': html_content,
+        'date_generated': timezone.now()
+    }
+    rendered_html = render_to_string('projects/pdf_summary.html', context, request=request)
+    
+    # Convertir a PDF
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(rendered_html.encode("utf-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f"Resumen_Ejecutivo_{project.key}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+        
+    messages.error(request, "Error al generar el PDF.")
+    return redirect('project_detail', pk=pk)
