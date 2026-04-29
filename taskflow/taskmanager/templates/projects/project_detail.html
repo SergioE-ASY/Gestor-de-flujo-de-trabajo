@@ -10,6 +10,9 @@
   {% if membership.role in 'owner,manager' %}
   <a href="{% url 'project_edit' project.pk %}" class="btn btn-secondary btn-sm">Editar</a>
   {% endif %}
+  {% if user.is_premium %}
+  <a href="{% url 'project_summary_pdf' project.pk %}" class="btn btn-secondary btn-sm" onclick="this.innerHTML='<span class=\'ai-spinner\'></span> Generando...'; this.style.pointerEvents='none'; setTimeout(() => { this.innerHTML='✨ Resumen PDF'; this.style.pointerEvents='auto'; }, 6000);">✨ Resumen PDF</a>
+  {% endif %}
   <a href="{% url 'project_roadmap' project.pk %}" class="btn btn-ghost btn-sm">Roadmap</a>
   <a href="{% url 'task_create' project.pk %}" class="btn btn-primary btn-sm">+ Nueva tarea</a>
 {% endblock %}
@@ -95,6 +98,10 @@
 
   <!-- Inline filter row -->
   <div class="flt-row">
+    <!-- Search bar -->
+    <div class="flt-search" style="margin-right:8px;">
+      <input type="text" id="search-input" placeholder="Buscar tareas..." style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:0.85rem;width:200px;">
+    </div>
 
     <!-- Asignado -->
     <div class="flt-drop">
@@ -250,7 +257,11 @@
       <tbody>
         {% for status_key, status_data in tasks_by_status.items %}
         {% for task in status_data.tasks %}
-        <tr style="cursor:pointer;" onclick="window.location='{% url 'task_detail' project.pk task.pk %}'">
+        <tr style="cursor:pointer;" onclick="window.location='{% url 'task_detail' project.pk task.pk %}'"
+            data-assignee="{% if task.assignee %}{{ task.assignee.pk }}{% endif %}"
+            data-sprint="{% if task.sprint %}{{ task.sprint.pk }}{% endif %}"
+            data-priority="{{ task.priority }}"
+            data-tags="{% for tag in task.tags.all %}{{ tag.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
           <td><span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-muted);">{{ project.key }}-{{ task.project_sequence }}</span></td>
           <td style="font-weight:500;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ task.title }}</td>
           <td><span class="badge badge-{{ task.type }}">{{ task.get_type_display }}</span></td>
@@ -873,8 +884,14 @@ function openEditMember(memberPk, name, currentRole) {
 
 // ─── Board filters ────────────────────────────────────────────────────────────
 (function () {
-  const state = { assignee: '', sprint: '', priorities: new Set(), tags: new Set() };
+  const state = { search: '', assignee: '', sprint: '', priorities: new Set(), tags: new Set() };
   const clearBtn = document.getElementById('filter-clear');
+
+  // ── search input ──
+  document.getElementById('search-input').addEventListener('input', e => {
+    state.search = e.target.value.toLowerCase().trim();
+    apply();
+  });
 
   // ── abrir/cerrar dropdowns ──
   document.querySelectorAll('.flt-drop').forEach(drop => {
@@ -947,8 +964,9 @@ function openEditMember(memberPk, name, currentRole) {
 
   // ── limpiar ──
   if (clearBtn) clearBtn.addEventListener('click', () => {
-    state.assignee = ''; state.sprint = '';
+    state.search = ''; state.assignee = ''; state.sprint = '';
     state.priorities.clear(); state.tags.clear();
+    document.getElementById('search-input').value = '';
     document.querySelectorAll('.flt-opt.selected').forEach(o => o.classList.remove('selected'));
     // restaurar "Todos" como selected en selects simples
     document.querySelector('#menu-assignee .flt-opt[data-value=""]')?.classList.add('selected');
@@ -965,28 +983,36 @@ function openEditMember(memberPk, name, currentRole) {
 
   // ── filtrado ──
   function apply() {
+    const hasSearch   = !!state.search;
     const hasAssignee = !!state.assignee;
     const hasSprint   = !!state.sprint;
     const hasPriority = state.priorities.size > 0;
     const hasTags     = state.tags.size > 0;
-    const anyActive   = hasAssignee || hasSprint || hasPriority || hasTags;
+    const anyActive   = hasSearch || hasAssignee || hasSprint || hasPriority || hasTags;
 
-    document.querySelectorAll('.task-card').forEach(card => {
+    document.querySelectorAll('.task-card, #tab-list tbody tr').forEach(item => {
       let ok = true;
-      if (hasAssignee) {
+      if (hasSearch) {
+        const titleEl = item.classList.contains('task-card') 
+          ? item.querySelector('.task-card-title') 
+          : item.querySelector('td:nth-child(2)');
+        const title = titleEl?.textContent.toLowerCase() || '';
+        if (!title.includes(state.search)) ok = false;
+      }
+      if (ok && hasAssignee) {
         const want = state.assignee === '__none__' ? '' : state.assignee;
-        if ((card.dataset.assignee || '').trim() !== want) ok = false;
+        if ((item.dataset.assignee || '').trim() !== want) ok = false;
       }
       if (ok && hasSprint) {
         const want = state.sprint === '__none__' ? '' : state.sprint;
-        if ((card.dataset.sprint || '').trim() !== want) ok = false;
+        if ((item.dataset.sprint || '').trim() !== want) ok = false;
       }
-      if (ok && hasPriority && !state.priorities.has(card.dataset.priority)) ok = false;
+      if (ok && hasPriority && !state.priorities.has(item.dataset.priority)) ok = false;
       if (ok && hasTags) {
-        const cardTags = (card.dataset.tags || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (!cardTags.some(t => state.tags.has(t))) ok = false;
+        const itemTags = (item.dataset.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (!itemTags.some(t => state.tags.has(t))) ok = false;
       }
-      card.style.display = ok ? '' : 'none';
+      item.style.display = ok ? '' : 'none';
     });
 
     document.querySelectorAll('.board-col').forEach(col => {
