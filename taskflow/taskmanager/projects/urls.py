@@ -14,4 +14,6 @@ urlpatterns = [
     path('projects/<uuid:pk>/sprints/new/', views.sprint_create, name='sprint_create'),
     path('projects/<uuid:pk>/sprints/<uuid:sprint_pk>/edit/', views.sprint_update, name='sprint_update'),
     path('projects/<uuid:pk>/roadmap/', views.project_roadmap, name='project_roadmap'),
+    path('projects/new/ai/parse/', views.project_create_ai, name='project_create_ai'),
+    path('projects/new/ai/confirm/', views.project_create_ai_confirm, name='project_create_ai_confirm'),
 ]

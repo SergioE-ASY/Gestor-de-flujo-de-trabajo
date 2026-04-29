@@ -147,3 +147,6 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_PRICE_ID = config('STRIPE_PRICE_ID', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Gemini API Key
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')

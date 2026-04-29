@@ -445,3 +445,110 @@ def project_roadmap(request, pk, project=None, membership=None):
         'tasks_json': json.dumps(tasks_data),
         'sprints_json': json.dumps(sprints_data),
     })
+
+
+@login_required
+def project_create_ai(request):
+    """AJAX endpoint: recibe descripción en lenguaje natural y devuelve JSON estructurado."""
+    if not request.user.is_premium:
+        return JsonResponse({'error': 'Esta función es exclusiva para usuarios Premium.'}, status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+
+    import json as _json
+    try:
+        body = _json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Datos inválidos.'}, status=400)
+
+    description = body.get('description', '').strip()
+    if not description:
+        return JsonResponse({'error': 'La descripción no puede estar vacía.'}, status=400)
+
+    if len(description) > 5000:
+        return JsonResponse({'error': 'La descripción es demasiado larga (máx. 5000 caracteres).'}, status=400)
+
+    from .ai_service import parse_project_from_natural_language
+    result = parse_project_from_natural_language(description)
+
+    if 'error' in result:
+        return JsonResponse({'error': result['error']}, status=422)
+
+    return JsonResponse({'data': result})
+
+
+@login_required
+def project_create_ai_confirm(request):
+    """Crea el proyecto y tareas a partir de los datos confirmados por el usuario."""
+    if not request.user.is_premium:
+        return JsonResponse({'error': 'Esta función es exclusiva para usuarios Premium.'}, status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+
+    import json as _json
+    from django.db import transaction
+    from tasks.models import Task
+
+    try:
+        body = _json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Datos inválidos.'}, status=400)
+
+    org_id = body.get('organization')
+    if not org_id:
+        return JsonResponse({'error': 'Debes seleccionar una organización.'}, status=400)
+
+    org = get_object_or_404(Organization, pk=org_id)
+    if not OrganizationUser.objects.filter(organization=org, user=request.user).exists():
+        return JsonResponse({'error': 'No eres miembro de esa organización.'}, status=403)
+
+    name = body.get('name', '').strip()
+    key = body.get('key', '').strip().upper()
+    if not name or not key:
+        return JsonResponse({'error': 'Nombre y clave son obligatorios.'}, status=400)
+
+    if Project.objects.filter(organization=org, key=key).exists():
+        return JsonResponse({'error': f'La clave "{key}" ya existe en esta organización.'}, status=409)
+
+    try:
+        with transaction.atomic():
+            project = Project.objects.create(
+                organization=org,
+                owner=request.user,
+                key=key[:10],
+                name=name[:200],
+                description=body.get('description', ''),
+                status=body.get('status', 'planning'),
+                priority=body.get('priority', 'medium'),
+                start_date=body.get('start_date') or None,
+                due_date=body.get('due_date') or None,
+                hour_budget=body.get('hour_budget') or None,
+            )
+            ProjectMember.objects.create(project=project, user=request.user, role='owner')
+
+            # Crear tareas sugeridas
+            tasks_data = body.get('tasks', [])
+            for i, task_data in enumerate(tasks_data):
+                if not task_data.get('title'):
+                    continue
+                Task.objects.create(
+                    project=project,
+                    title=task_data['title'][:300],
+                    type=task_data.get('type', 'task'),
+                    priority=task_data.get('priority', 'medium'),
+                    description=task_data.get('description', ''),
+                    estimated_hours=task_data.get('estimated_hours') or None,
+                    status='backlog',
+                    position=i,
+                )
+
+        return JsonResponse({
+            'success': True,
+            'redirect': f'/projects/{project.pk}/',
+            'project_name': project.name,
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': f'Error al crear el proyecto: {str(e)}'}, status=500)
