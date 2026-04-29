@@ -18,23 +18,52 @@ User = get_user_model()
 
 @login_required
 def dashboard(request):
+    query = request.GET.get('q', '').strip()
+    
     user_orgs = OrganizationUser.objects.filter(user=request.user).select_related('organization')
-
     user_projects = Project.objects.filter(
         members__user=request.user, deleted_at__isnull=True
-    ).select_related('organization', 'owner').distinct()[:6]
-
+    ).select_related('organization', 'owner').distinct()
+    
     from tasks.models import Task
+    from django.db.models import Q
     from django.utils import timezone
-    my_tasks = Task.objects.filter(assignee=request.user).exclude(status='done')
-    overdue_tasks = my_tasks.filter(due_date__lt=timezone.now().date())
-
-    context = {
-        'user_orgs': user_orgs,
-        'user_projects': user_projects,
-        'my_tasks_count': my_tasks.count(),
-        'overdue_count': overdue_tasks.count(),
-    }
+    
+    if query:
+        search_orgs = user_orgs.filter(organization__name__icontains=query)
+        search_projects = user_projects.filter(
+            Q(name__icontains=query) | 
+            Q(key__icontains=query) | 
+            Q(description__icontains=query)
+        )
+        search_tasks = Task.objects.filter(
+            project__members__user=request.user,
+            project__deleted_at__isnull=True
+        ).filter(
+            Q(title__icontains=query) | 
+            Q(description__icontains=query) |
+            Q(assignee__name__icontains=query)
+        ).select_related('project', 'assignee').distinct()[:20]
+        
+        context = {
+            'query': query,
+            'search_orgs': search_orgs,
+            'search_projects': search_projects,
+            'search_tasks': search_tasks,
+        }
+    else:
+        user_projects = user_projects[:6]
+        my_tasks = Task.objects.filter(assignee=request.user).exclude(status='done')
+        overdue_tasks = my_tasks.filter(due_date__lt=timezone.now().date())
+    
+        context = {
+            'query': query,
+            'user_orgs': user_orgs,
+            'user_projects': user_projects,
+            'my_tasks_count': my_tasks.count(),
+            'overdue_count': overdue_tasks.count(),
+        }
+        
     return render(request, 'organizations/dashboard.html', context)
 
 
