@@ -3,7 +3,6 @@ site_name = "E-asy · Gestor de flujo de trabajo"
 site_description = "Documentación del sistema de gestión de proyectos y tareas E-asy."
 site_author = "Equipo E-asy"
 copyright = "Copyright &copy; 2026 E-asy"
-dev_addr = "localhost:8080"
 
 nav = [
   { "Inicio" = "index.md" },
@@ -22,7 +21,6 @@ nav = [
 language = "es"
 variant = "classic"
 favicon = "easy_icono.png"
-logo = "easy_icono.png"
 
 features = [
   "announce.dismiss",
