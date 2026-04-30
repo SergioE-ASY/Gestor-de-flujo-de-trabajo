@@ -11,6 +11,7 @@ from projects.models import Project, ProjectMember
 from tasks.models import Task, Comment
 from projects.permissions import (
     can_create_task, can_edit_task, can_delete_task, can_manage_members,
+    can_edit_project,
 )
 from .serializers import (
     UserSerializer, ProjectSerializer, TaskSerializer, CommentSerializer,
@@ -111,7 +112,7 @@ class ProjectRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     def update(self, request, *args, **kwargs):
         project = self.get_object()
         membership = project.members.filter(user=request.user).first()
-        if not can_edit_task(membership):
+        if not can_edit_project(membership):
             return Response({'error': 'Sin permisos'}, status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
 
