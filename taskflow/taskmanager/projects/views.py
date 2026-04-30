@@ -293,6 +293,14 @@ def project_add_member(request, pk, project=None, membership=None):
             )
             if created:
                 messages.success(request, f'{user.name} añadido al proyecto.')
+                if user != request.user:
+                    from notifications.models import Notification
+                    Notification.objects.create(
+                        user=user,
+                        project=project,
+                        type='project_added',
+                        message=f'{request.user.name} te ha añadido al proyecto "{project.name}".',
+                    )
             else:
                 messages.warning(request, f'{user.name} ya es miembro.')
         except User.DoesNotExist:

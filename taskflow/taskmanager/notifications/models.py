@@ -7,12 +7,16 @@ class Notification(models.Model):
     TYPE_CHOICES = [
         ('task_assigned', 'Tarea asignada'),
         ('task_due', 'Tarea por vencer'),
+        ('task_completed', 'Tarea completada'),
         ('comment_added', 'Nuevo comentario'),
         ('status_changed', 'Estado cambiado'),
         ('sprint_started', 'Sprint iniciado'),
         ('mentioned', 'Mencionado'),
         ('hours_validation_requested', 'Validación de horas solicitada'),
+        ('hours_validated', 'Estimación de horas validada'),
         ('hours_exceeded', 'Horas estimadas superadas'),
+        ('org_added', 'Añadido a organización'),
+        ('project_added', 'Añadido a proyecto'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
