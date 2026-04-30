@@ -34,7 +34,7 @@ def generate_executive_summary(project, tasks):
         # Preparar los datos del proyecto
         total_tasks = len(tasks)
         completed_tasks = sum(1 for t in tasks if t.status == 'done')
-        in_progress_tasks = sum(1 for t in tasks if t.status in ['in_progress', 'review'])
+        in_progress_tasks = sum(1 for t in tasks if t.status in ['in_progress', 'in_review'])
         backlog_tasks = sum(1 for t in tasks if t.status == 'backlog')
 
         progress_pct = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0

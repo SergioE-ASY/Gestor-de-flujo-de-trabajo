@@ -10,7 +10,7 @@ from io import BytesIO
 try:
     from xhtml2pdf import pisa
 except ImportError:
-    pass # Solo falla si no se instaló aún
+    pisa = None
 from .ai_summary_service import generate_executive_summary
 from .models import Project, ProjectMember, Sprint
 from .permissions import (
@@ -595,18 +595,21 @@ def project_executive_summary_pdf(request, pk, project, membership):
     }
     rendered_html = render_to_string('projects/pdf_summary.html', context, request=request)
     
-    # Convertir a PDF
-    result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(rendered_html.encode("utf-8")), result)
-    
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        filename = f"Resumen_Ejecutivo_{project.key}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-        
-    messages.error(request, "Error al generar el PDF.")
-    return redirect('project_detail', pk=pk)
+    # Generar PDF si xhtml2pdf está disponible, si no devolver HTML imprimible
+    if pisa is not None:
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(rendered_html.encode("utf-8")), result)
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f"Resumen_Ejecutivo_{project.key}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        messages.error(request, "Error al generar el PDF.")
+        return redirect('project_detail', pk=pk)
+
+    # Fallback: HTML imprimible (Ctrl+P → Guardar como PDF en el navegador)
+    response = HttpResponse(rendered_html, content_type='text/html; charset=utf-8')
+    return response
 
 @login_required
 @require_project_member()
