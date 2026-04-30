@@ -57,6 +57,10 @@ class Task(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='responsible_tasks',
     )
+    hours_requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='hours_requested_tasks',
+    )
     hours_validated = models.BooleanField(default=False)
     start_date = models.DateField(null=True, blank=True)
     due_date = models.DateField(null=True, blank=True)

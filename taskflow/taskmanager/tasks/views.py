@@ -53,6 +53,9 @@ def _parse_hours(post):
 @project_permission(can_create_task, pk_kwarg='project_pk')
 def task_create(request, project_pk, project=None, membership=None):
     if request.method == 'POST':
+        parsed_hours = _parse_hours(request.POST) or None
+        responsible_id = request.POST.get('task_responsible') or None
+
         task = Task.objects.create(
             project=project,
             title=request.POST.get('title'),
@@ -62,8 +65,9 @@ def task_create(request, project_pk, project=None, membership=None):
             priority=request.POST.get('priority', 'medium'),
             start_date=request.POST.get('start_date') or None,
             due_date=request.POST.get('due_date') or None,
-            estimated_hours=_parse_hours(request.POST) or None,
-            task_responsible_id=request.POST.get('task_responsible') or None,
+            estimated_hours=parsed_hours,
+            task_responsible_id=responsible_id,
+            hours_requester=request.user if (responsible_id and parsed_hours) else None,
             sprint_id=request.POST.get('sprint') or None,
             assignee_id=request.POST.get('assignee') or None,
             parent_task_id=request.POST.get('parent_task') or None,
@@ -84,6 +88,8 @@ def task_create(request, project_pk, project=None, membership=None):
                 type='hours_validation_requested',
                 message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
             )
+        elif responsible_id and not parsed_hours:
+            messages.warning(request, 'Has asignado un responsable sin horas estimadas. El responsable no recibirá notificación hasta que añadas una estimación.')
 
         messages.success(request, f'Tarea "{task.title}" creada.')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -147,8 +153,9 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         if hours_changed:
             task.hours_validated = False
         task.estimated_hours = new_hours
-        task.task_responsible_id = request.POST.get('task_responsible') or None
-        responsible_changed = task.task_responsible_id != old_responsible_id
+        new_responsible_id = request.POST.get('task_responsible') or None
+        responsible_changed = str(new_responsible_id) != str(old_responsible_id)
+        task.task_responsible_id = new_responsible_id
         task.sprint_id = request.POST.get('sprint') or None
         task.assignee_id = request.POST.get('assignee') or None
         task.save()
@@ -174,11 +181,15 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
             and (responsible_changed or hours_changed)
         )
         if should_notify_responsible:
+            task.hours_requester = request.user
+            task.save(update_fields=['hours_requester'])
             Notification.objects.create(
                 user=task.task_responsible, task=task, project=project,
                 type='hours_validation_requested',
                 message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
             )
+        elif new_responsible_id and not task.estimated_hours:
+            messages.warning(request, 'Has asignado un responsable sin horas estimadas. El responsable no recibirá notificación hasta que añadas una estimación.')
 
         # Status change notifications
         if task.status != old_status:
@@ -375,15 +386,22 @@ def task_validate_hours(request, project_pk, pk, project=None, membership=None):
         return redirect('task_detail', project_pk=project_pk, pk=pk)
     from notifications.models import Notification
     action = request.POST.get('action')
-    notify_user = task.assignee if task.assignee and task.assignee != request.user else None
+
+    # Notificar a asignado y/o solicitante (sin duplicar ni notificar al propio responsable)
+    notified = {request.user.pk}
+    notify_recipients = []
+    for candidate in (task.assignee, task.hours_requester):
+        if candidate and candidate.pk not in notified:
+            notify_recipients.append(candidate)
+            notified.add(candidate.pk)
 
     if action == 'validate':
         task.hours_validated = True
         task.save(update_fields=['hours_validated'])
         messages.success(request, 'Estimación de horas validada.')
-        if notify_user:
+        for recipient in notify_recipients:
             Notification.objects.create(
-                user=notify_user, task=task, project=project,
+                user=recipient, task=task, project=project,
                 type='hours_validated',
                 message=f'{request.user.name} ha aprobado la estimación de {task.estimated_hours}h para: {task.title}',
             )
@@ -391,11 +409,12 @@ def task_validate_hours(request, project_pk, pk, project=None, membership=None):
         hours_before = task.estimated_hours
         task.hours_validated = False
         task.estimated_hours = None
-        task.save(update_fields=['hours_validated', 'estimated_hours'])
+        task.hours_requester = None
+        task.save(update_fields=['hours_validated', 'estimated_hours', 'hours_requester'])
         messages.info(request, 'Estimación rechazada. El creador puede introducir una nueva.')
-        if notify_user:
+        for recipient in notify_recipients:
             Notification.objects.create(
-                user=notify_user, task=task, project=project,
+                user=recipient, task=task, project=project,
                 type='hours_validated',
                 message=f'{request.user.name} ha rechazado la estimación de {hours_before}h para: {task.title}. Por favor, introduce una nueva estimación.',
             )
