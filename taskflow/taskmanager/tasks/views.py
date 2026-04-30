@@ -16,6 +16,28 @@ from shared.decorators import require_project_member, project_permission
 from decimal import Decimal
 
 
+def _notify_status_change(task, project, changed_by, old_status, new_status):
+    """Send notifications when a task status changes."""
+    from notifications.models import Notification
+
+    # Notify assignee when someone else changes the status
+    if task.assignee and task.assignee != changed_by:
+        status_label = dict(Task.STATUS_CHOICES).get(new_status, new_status)
+        Notification.objects.create(
+            user=task.assignee, task=task, project=project,
+            type='status_changed',
+            message=f'{changed_by.name} cambió el estado de "{task.title}" a {status_label}.',
+        )
+
+    # Notify task_responsible when the task they are supervising is completed
+    if new_status == 'done' and task.task_responsible and task.task_responsible != changed_by:
+        Notification.objects.create(
+            user=task.task_responsible, task=task, project=project,
+            type='task_completed',
+            message=f'La tarea "{task.title}" que supervisabas ha sido completada.',
+        )
+
+
 def _parse_hours(post):
     """Convert separate h/m POST fields to a Decimal hours value, or None."""
     try:
@@ -109,6 +131,10 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)
 
     if request.method == 'POST':
+        old_status = task.status
+        old_assignee = task.assignee
+        old_responsible_id = task.task_responsible_id
+
         task.title = request.POST.get('title', task.title)
         task.description = request.POST.get('description', task.description)
         task.type = request.POST.get('type', task.type)
@@ -121,11 +147,9 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
         if hours_changed:
             task.hours_validated = False
         task.estimated_hours = new_hours
-        old_responsible_id = task.task_responsible_id
         task.task_responsible_id = request.POST.get('task_responsible') or None
         responsible_changed = task.task_responsible_id != old_responsible_id
         task.sprint_id = request.POST.get('sprint') or None
-        old_assignee = task.assignee
         task.assignee_id = request.POST.get('assignee') or None
         task.save()
 
@@ -134,12 +158,16 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
             TaskTag.objects.get_or_create(task=task, tag_id=tag_id)
 
         from notifications.models import Notification
+
+        # New or changed assignee
         if task.assignee and task.assignee != old_assignee and task.assignee != request.user:
             Notification.objects.create(
                 user=task.assignee, task=task, project=project,
                 type='task_assigned',
                 message=f'Se te asignó la tarea: {task.title}',
             )
+
+        # Hours validation request (new responsible or changed hours)
         should_notify_responsible = (
             task.task_responsible and task.estimated_hours
             and task.task_responsible != request.user
@@ -151,6 +179,10 @@ def task_edit(request, project_pk, pk, project=None, membership=None):
                 type='hours_validation_requested',
                 message=f'{request.user.name} solicita que valides la estimación de {task.estimated_hours}h para: {task.title}',
             )
+
+        # Status change notifications
+        if task.status != old_status:
+            _notify_status_change(task, project, request.user, old_status, task.status)
 
         messages.success(request, 'Tarea actualizada.')
         return redirect('task_detail', project_pk=project_pk, pk=pk)
@@ -190,9 +222,11 @@ def task_delete(request, project_pk, pk, project=None, membership=None):
 def task_update_status(request, project_pk, pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=pk, project=project)
     new_status = request.POST.get('status')
-    if new_status in dict(Task.STATUS_CHOICES):
+    if new_status in dict(Task.STATUS_CHOICES) and new_status != task.status:
+        old_status = task.status
         task.status = new_status
         task.save()
+        _notify_status_change(task, project, request.user, old_status, new_status)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'status': task.status})
     return redirect('task_detail', project_pk=project_pk, pk=pk)
@@ -219,10 +253,14 @@ def task_reorder(request, project_pk, project=None, membership=None):
     task = get_object_or_404(Task, pk=task_id, project=project)
 
     with transaction.atomic():
+        old_status = task.status
         task.status = new_status
         task.save()
         for i, tid in enumerate(order):
             Task.objects.filter(pk=tid, project=project).update(position=i)
+
+    if old_status != new_status:
+        _notify_status_change(task, project, request.user, old_status, new_status)
 
     return JsonResponse({'success': True})
 
@@ -236,12 +274,16 @@ def comment_create(request, project_pk, task_pk, project=None, membership=None):
     if content:
         Comment.objects.create(task=task, user=request.user, content=content)
         from notifications.models import Notification
-        if task.assignee and task.assignee != request.user:
-            Notification.objects.create(
-                user=task.assignee, task=task, project=project,
-                type='comment_added',
-                message=f'{request.user.name} comentó en: {task.title}',
-            )
+        comment_msg = f'{request.user.name} comentó en: {task.title}'
+        notified = {request.user.pk}
+        for recipient in (task.assignee, task.task_responsible):
+            if recipient and recipient.pk not in notified:
+                Notification.objects.create(
+                    user=recipient, task=task, project=project,
+                    type='comment_added',
+                    message=comment_msg,
+                )
+                notified.add(recipient.pk)
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
 
@@ -342,7 +384,7 @@ def task_validate_hours(request, project_pk, pk, project=None, membership=None):
         if notify_user:
             Notification.objects.create(
                 user=notify_user, task=task, project=project,
-                type='hours_validation_requested',
+                type='hours_validated',
                 message=f'{request.user.name} ha aprobado la estimación de {task.estimated_hours}h para: {task.title}',
             )
     elif action == 'reject':
@@ -354,7 +396,7 @@ def task_validate_hours(request, project_pk, pk, project=None, membership=None):
         if notify_user:
             Notification.objects.create(
                 user=notify_user, task=task, project=project,
-                type='hours_validation_requested',
+                type='hours_validated',
                 message=f'{request.user.name} ha rechazado la estimación de {hours_before}h para: {task.title}. Por favor, introduce una nueva estimación.',
             )
     return redirect('task_detail', project_pk=project_pk, pk=pk)
