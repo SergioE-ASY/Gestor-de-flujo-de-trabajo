@@ -49,7 +49,7 @@ class Task(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='backlog')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='backlog', db_index=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     position = models.IntegerField(default=0)
     estimated_hours = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
