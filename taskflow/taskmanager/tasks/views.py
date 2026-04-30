@@ -318,8 +318,11 @@ def attachment_upload(request, project_pk, task_pk, project=None, membership=Non
     task = get_object_or_404(Task, pk=task_pk, project=project)
     file = request.FILES.get('file')
     if file:
-        Attachment.objects.create(task=task, uploaded_by=request.user, file=file)
-        messages.success(request, 'Archivo adjunto subido.')
+        if file.size > 10 * 1024 * 1024:
+            messages.error(request, 'El archivo no puede superar los 10 MB.')
+        else:
+            Attachment.objects.create(task=task, uploaded_by=request.user, file=file)
+            messages.success(request, 'Archivo adjunto subido.')
     return redirect('task_detail', project_pk=project_pk, pk=task_pk)
 
 

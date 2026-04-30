@@ -58,14 +58,18 @@ def project_create(request):
             elif Project.objects.filter(organization=org, key=key).exists():
                 messages.error(request, f'La clave "{key}" ya existe en esta organización.')
             else:
-                project = Project.objects.create(
-                    organization=org, owner=request.user, key=key,
-                    name=name, description=description, status=status,
-                    priority=priority, start_date=start_date, due_date=due_date,
-                    hour_budget=request.POST.get('hour_budget') or None,
-                )
-                ProjectMember.objects.create(project=project, user=request.user, role='owner')
-                messages.success(request, f'Proyecto "{project.name}" creado.')
+                from django.db import IntegrityError
+                try:
+                    project = Project.objects.create(
+                        organization=org, owner=request.user, key=key,
+                        name=name, description=description, status=status,
+                        priority=priority, start_date=start_date, due_date=due_date,
+                        hour_budget=request.POST.get('hour_budget') or None,
+                    )
+                    ProjectMember.objects.create(project=project, user=request.user, role='owner')
+                    messages.success(request, f'Proyecto "{project.name}" creado.')
+                except IntegrityError:
+                    messages.error(request, f'La clave "{key}" ya existe en esta organización.')
                 return redirect('project_detail', pk=project.pk)
 
     return render(request, 'projects/project_form.html', {
@@ -677,6 +681,12 @@ def project_board_chat_apply(request, pk, project=None, membership=None):
     except (ValueError, TypeError):
         return JsonResponse({'error': 'Datos inválidos.'}, status=400)
         
+    from projects.models import ProjectMember as _PM
+    members_by_user_id = {
+        str(m.user_id): m.user
+        for m in project.members.select_related('user').all()
+    }
+
     applied_count = 0
     try:
         with transaction.atomic():
@@ -700,15 +710,8 @@ def project_board_chat_apply(request, pk, project=None, membership=None):
                             if 'description' in action and action['description'] is not None:
                                 task.description = action['description']
                             if 'assignee_id' in action:
-                                assignee_id = action['assignee_id']
-                                if assignee_id:
-                                    try:
-                                        member = project.members.get(user_id=assignee_id)
-                                        task.assignee = member.user
-                                    except Exception:
-                                        pass
-                                else:
-                                    task.assignee = None
+                                assignee_id = str(action['assignee_id']) if action['assignee_id'] else None
+                                task.assignee = members_by_user_id.get(assignee_id) if assignee_id else None
                             task.save()
                             applied_count += 1
                         except Task.DoesNotExist:
@@ -716,24 +719,16 @@ def project_board_chat_apply(request, pk, project=None, membership=None):
                 elif action_type == 'create_task':
                     title = action.get('title')
                     if title:
-                        assignee_id = action.get('assignee_id')
-                        parent_id = action.get('parent_id')
-                        assignee = None
+                        assignee_id = str(action['assignee_id']) if action.get('assignee_id') else None
+                        assignee = members_by_user_id.get(assignee_id) if assignee_id else None
+
                         parent = None
-                        
-                        if assignee_id:
+                        if action.get('parent_id'):
                             try:
-                                member = project.members.get(user_id=assignee_id)
-                                assignee = member.user
-                            except Exception:
+                                parent = Task.objects.get(pk=action['parent_id'], project=project)
+                            except Task.DoesNotExist:
                                 pass
-                                
-                        if parent_id:
-                            try:
-                                parent = Task.objects.get(pk=parent_id, project=project)
-                            except Exception:
-                                pass
-                                
+
                         max_pos = project.tasks.filter(status=action.get('status', 'todo')).count()
                         Task.objects.create(
                             project=project,

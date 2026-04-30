@@ -68,12 +68,14 @@ def stripe_webhook(request):
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        # Use client_reference_id (UUID) to identify the user, not email.
-        # Email can change; UUID is immutable.
         user_pk = session.get('client_reference_id')
+        customer_id = session.get('customer')
         if user_pk:
             from accounts.models import User
-            updated = User.objects.filter(pk=user_pk).update(is_premium=True)
+            update_fields = {'is_premium': True}
+            if customer_id:
+                update_fields['stripe_customer_id'] = customer_id
+            updated = User.objects.filter(pk=user_pk).update(**update_fields)
             if not updated:
                 logger.error(
                     'Stripe webhook checkout.session.completed: no user found for pk=%s', user_pk
@@ -81,15 +83,12 @@ def stripe_webhook(request):
 
     elif event['type'] == 'customer.subscription.deleted':
         customer_id = event['data']['object'].get('customer')
-        try:
-            customer = stripe.Customer.retrieve(customer_id)
-            email = customer.get('email')
-            if email:
-                from accounts.models import User
-                User.objects.filter(email=email).update(is_premium=False)
-        except Exception:
-            logger.exception(
-                'Stripe webhook subscription.deleted: failed to retrieve customer %s', customer_id
-            )
+        if customer_id:
+            from accounts.models import User
+            updated = User.objects.filter(stripe_customer_id=customer_id).update(is_premium=False)
+            if not updated:
+                logger.error(
+                    'Stripe webhook subscription.deleted: no user found for customer_id=%s', customer_id
+                )
 
     return HttpResponse(status=200)
