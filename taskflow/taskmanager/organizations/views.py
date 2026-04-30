@@ -136,6 +136,13 @@ def org_invite(request, pk, org=None, org_membership=None):
             )
             if created:
                 messages.success(request, f'{user.name} añadido/a a la organización.')
+                if user != request.user:
+                    from notifications.models import Notification
+                    Notification.objects.create(
+                        user=user,
+                        type='org_added',
+                        message=f'{request.user.name} te ha añadido a la organización "{org.name}".',
+                    )
             else:
                 messages.warning(request, f'{user.name} ya es miembro.')
         except User.DoesNotExist:
