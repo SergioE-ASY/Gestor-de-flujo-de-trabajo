@@ -133,7 +133,6 @@ def parse_project_from_natural_language(description: str) -> dict:
         return {"error": "La IA generó una respuesta inválida. Inténtalo de nuevo."}
     except Exception as e:
         error_str = str(e)
-        print(f"DEBUG GEMINI ERROR: {error_str}")
         logger.error(f"Error llamando a Gemini: {error_str}")
 
         # Mensajes amigables para errores comunes
