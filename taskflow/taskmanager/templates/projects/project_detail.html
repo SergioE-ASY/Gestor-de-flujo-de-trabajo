@@ -7,14 +7,35 @@
 {% endblock %}
 
 {% block topbar_actions %}
-  {% if membership.role in 'owner,manager' %}
-  <a href="{% url 'project_edit' project.pk %}" class="btn btn-secondary btn-sm">Editar</a>
-  {% endif %}
   {% if user.is_premium %}
-  <a href="{% url 'project_summary_pdf' project.pk %}" class="btn btn-secondary btn-sm" onclick="this.innerHTML='<span class=\'ai-spinner\'></span> Generando...'; this.style.pointerEvents='none'; setTimeout(() => { this.innerHTML='✨ Resumen PDF'; this.style.pointerEvents='auto'; }, 6000);">✨ Resumen PDF</a>
+  <div class="flt-drop" style="position: relative; display: inline-block;">
+    <button class="btn btn-ghost btn-sm btn-icon flt-btn" id="btn-premium-actions" style="font-size: 1.2rem; padding: 4px 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+    <div class="flt-menu" id="menu-premium-actions" style="right: 0; left: auto; top: 100%; margin-top: 4px; min-width: 180px; padding: 8px 0;">
+      <a href="{% url 'task_create' project.pk %}" class="dropdown-item" style="font-weight:600; color:var(--primary);">+ Nueva tarea</a>
+      <a href="{% url 'project_roadmap' project.pk %}" class="dropdown-item">Roadmap</a>
+      <div class="flt-sep" style="margin: 4px 0;"></div>
+      <span style="padding: 8px 16px; font-weight: 500; color:var(--accent);">✨ IA Pro</span>
+      <button class="dropdown-item" onclick="toggleBoardChat()" style="font-weight: 500; background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.08));">✨ Board Chat</button>
+      <a href="{% url 'project_summary_pdf' project.pk %}" class="dropdown-item" onclick="this.innerHTML='<span class=\'ai-spinner-inline\' style=\'border-top-color:var(--text); width:12px; height:12px; border-width:1.5px;\'></span> Generando...'; this.style.pointerEvents='none'; setTimeout(() => { this.innerHTML='✨ Resumen PDF'; this.style.pointerEvents='auto'; }, 6000);">✨ Resumen PDF</a>
+      {% if membership.role in 'owner,manager' %}
+      <div class="flt-sep" style="margin: 4px 0;"></div>
+      <a href="{% url 'project_edit' project.pk %}" class="dropdown-item">Editar proyecto</a>
+      {% endif %}
+    </div>
+  </div>
+  <style>
+    .dropdown-item { display: block; padding: 8px 16px; color: var(--text); font-size: 0.85rem; text-decoration: none; cursor: pointer; background: transparent; border: none; width: 100%; text-align: left; transition: background 0.15s; }
+    .dropdown-item:hover { background: var(--bg3); }
+  </style>
+  {% else %}
+    {% if membership.role in 'owner,manager' %}
+    <a href="{% url 'project_edit' project.pk %}" class="btn btn-secondary btn-sm">Editar</a>
+    {% endif %}
+    <a href="{% url 'project_roadmap' project.pk %}" class="btn btn-ghost btn-sm">Roadmap</a>
+    <a href="{% url 'task_create' project.pk %}" class="btn btn-primary btn-sm">+ Nueva tarea</a>
   {% endif %}
-  <a href="{% url 'project_roadmap' project.pk %}" class="btn btn-ghost btn-sm">Roadmap</a>
-  <a href="{% url 'task_create' project.pk %}" class="btn btn-primary btn-sm">+ Nueva tarea</a>
 {% endblock %}
 
 {% block content %}
@@ -864,6 +885,62 @@
   </div>
 </div>
 {% endif %}
+
+<!-- Board Chat Sidebar -->
+{% if user.is_premium %}
+<div class="bc-overlay" id="bc-overlay" onclick="toggleBoardChat()"></div>
+<div id="board-chat-panel">
+  <div class="bc-header">
+    <span class="bc-title">✨ Board Chat</span>
+    <button class="btn btn-ghost btn-sm btn-icon" onclick="toggleBoardChat()">✕</button>
+  </div>
+  <div class="bc-messages" id="bc-messages">
+    <div class="bc-msg bc-msg-ai">¡Hola! Soy tu asistente de tablero. Pídeme que mueva tareas, asigne personas o cree subtareas.</div>
+  </div>
+  <div class="bc-input-area">
+    <form id="bc-form" onsubmit="submitBoardChat(event)">
+      <div class="bc-input-group">
+        <input type="text" id="bc-input" class="bc-input" placeholder="Ej: Mueve las tareas de revisión de Ana a Completado..." autocomplete="off">
+        <button type="submit" class="bc-send-btn" id="bc-send-btn" title="Enviar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Board Chat CSS */
+#board-chat-panel { position: fixed; top: 0; right: -420px; width: 400px; max-width: 90vw; height: 100vh; background: var(--bg2); border-left: 1px solid var(--border); box-shadow: -4px 0 24px rgba(0,0,0,0.15); z-index: 1000; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+#board-chat-panel.open { right: 0; }
+.bc-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.08)); }
+.bc-title { font-weight: 700; font-size: 1.15rem; background: linear-gradient(135deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; color: transparent; }
+.bc-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+.bc-msg { max-width: 88%; padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.45; word-wrap: break-word; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.bc-msg-user { align-self: flex-end; background: linear-gradient(135deg, #6366f1, #3b82f6); color: white; border-bottom-right-radius: 4px; }
+.bc-msg-ai { align-self: flex-start; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.bc-diff-card { margin-top: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-family: var(--font-sans); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.bc-diff-header { padding: 10px 14px; background: var(--bg3); font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border); color: var(--text); display: flex; align-items: center; gap: 6px; }
+.bc-diff-body { padding: 12px 14px; font-size: 0.85rem; max-height: 250px; overflow-y: auto; }
+.bc-diff-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bc-diff-item:last-child { margin-bottom: 0; }
+.bc-diff-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; flex-shrink: 0; }
+.bc-diff-badge.update_status { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.bc-diff-badge.create_task { background: rgba(34,197,94,0.15); color: #22c55e; }
+.bc-actions { padding: 12px 14px; border-top: 1px solid var(--border); background: var(--bg2); text-align: right; }
+.bc-input-area { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--bg2); }
+.bc-input-group { display: flex; gap: 10px; align-items: center; }
+.bc-input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 24px; background: var(--bg); color: var(--text); outline: none; font-size: 0.95rem; transition: border-color 0.2s, box-shadow 0.2s; }
+.bc-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,0.15); }
+.bc-send-btn { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; }
+.bc-send-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.bc-send-btn:active { transform: translateY(1px); }
+.bc-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.bc-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3); backdrop-filter: blur(2px); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; }
+.bc-overlay.open { display: block; opacity: 1; }
+.ai-spinner-inline { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+</style>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -1068,5 +1145,166 @@ function openEditMember(memberPk, name, currentRole) {
     addBadge(opt, n);
   });
 })();
+
+// ─── Board Chat ──────────────────────────────────────────────────────────────
+let currentBoardActions = [];
+
+function toggleBoardChat() {
+  const panel = document.getElementById('board-chat-panel');
+  const overlay = document.getElementById('bc-overlay');
+  if (!panel) return;
+  
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    setTimeout(() => document.getElementById('bc-input').focus(), 300);
+  }
+}
+
+function appendChatMessage(sender, text, isHtml = false) {
+  const container = document.getElementById('bc-messages');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `bc-msg bc-msg-${sender}`;
+  if (isHtml) {
+    msgDiv.innerHTML = text;
+  } else {
+    msgDiv.textContent = text;
+  }
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+  return msgDiv;
+}
+
+function renderDiffCard(actions) {
+  if (!actions || actions.length === 0) return '';
+  
+  let html = `<div class="bc-diff-card">
+    <div class="bc-diff-header"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg> Cambios propuestos (${actions.length})</div>
+    <div class="bc-diff-body">`;
+    
+  actions.forEach(act => {
+    if (act.action === 'update_status') {
+      const card = document.querySelector(`.task-card[data-task-id="${act.task_id}"]`);
+      const title = card ? card.querySelector('.task-card-title').textContent : `Tarea ${act.task_id.substring(0,8)}`;
+      html += `<div class="bc-diff-item">
+        <span class="bc-diff-badge update_status">Mover</span>
+        <span>"${title}" &rarr; <strong>${act.new_status}</strong></span>
+      </div>`;
+    } else if (act.action === 'create_task') {
+      html += `<div class="bc-diff-item">
+        <span class="bc-diff-badge create_task">Crear</span>
+        <span>"${act.title}" en <strong>${act.status}</strong></span>
+      </div>`;
+    } else if (act.action === 'edit_task') {
+      const card = document.querySelector(`.task-card[data-task-id="${act.task_id}"]`);
+      const title = card ? card.querySelector('.task-card-title').textContent : `Tarea ${act.task_id.substring(0,8)}`;
+      let changes = [];
+      if (act.title) changes.push('título');
+      if (act.priority) changes.push('prioridad');
+      if (act.assignee_id !== undefined) changes.push('asignado');
+      if (act.description !== undefined) changes.push('descripción');
+      html += `<div class="bc-diff-item">
+        <span class="bc-diff-badge update_status" style="background: rgba(245,158,11,0.15); color: #f59e0b;">Editar</span>
+        <span>"${title}" &rarr; <strong>${changes.join(', ')}</strong></span>
+      </div>`;
+    }
+  });
+  
+  html += `</div>
+    <div class="bc-actions">
+      <button class="btn btn-primary btn-sm" onclick="applyBoardChatActions(this)" style="width:100%; background: linear-gradient(135deg, #8b5cf6, #3b82f6); border: none; font-weight: 600;">Aprobar y aplicar</button>
+    </div>
+  </div>`;
+  
+  return html;
+}
+
+async function submitBoardChat(e) {
+  e.preventDefault();
+  const input = document.getElementById('bc-input');
+  const btn = document.getElementById('bc-send-btn');
+  const message = input.value.trim();
+  if (!message) return;
+  
+  input.value = '';
+  input.disabled = true;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spinner-inline"></span>';
+  
+  appendChatMessage('user', message);
+  
+  try {
+    const res = await fetch(`/projects/{{ project.pk }}/board-chat/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ message })
+    });
+    
+    const data = await res.json();
+    
+    if (data.error) {
+      appendChatMessage('ai', `Error: ${data.error}`);
+    } else {
+      let aiText = data.message || "Aquí tienes mi propuesta:";
+      if (data.actions && data.actions.length > 0) {
+        currentBoardActions = data.actions;
+        aiText += renderDiffCard(data.actions);
+      } else {
+        currentBoardActions = [];
+      }
+      appendChatMessage('ai', aiText, true);
+    }
+  } catch (err) {
+    console.error(err);
+    appendChatMessage('ai', 'Ocurrió un error al conectar con el asistente.');
+  } finally {
+    input.disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+    setTimeout(() => input.focus(), 10);
+  }
+}
+
+async function applyBoardChatActions(btnEl) {
+  if (!currentBoardActions.length) return;
+  
+  btnEl.disabled = true;
+  btnEl.innerHTML = '<span class="ai-spinner-inline" style="margin-right:8px;vertical-align:middle;"></span> Aplicando...';
+  
+  try {
+    const res = await fetch(`/projects/{{ project.pk }}/board-chat/apply/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ actions: currentBoardActions })
+    });
+    
+    const data = await res.json();
+    if (data.error) {
+      alert(`Error: ${data.error}`);
+      btnEl.innerHTML = 'Reintentar';
+      btnEl.disabled = false;
+    } else {
+      btnEl.innerHTML = '¡Aplicado!';
+      btnEl.style.background = '#22c55e';
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error al aplicar cambios.');
+    btnEl.innerHTML = 'Reintentar';
+    btnEl.disabled = false;
+  }
+}
 </script>
 {% endblock %}

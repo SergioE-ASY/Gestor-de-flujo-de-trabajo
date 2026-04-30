@@ -607,3 +607,142 @@ def project_executive_summary_pdf(request, pk, project, membership):
         
     messages.error(request, "Error al generar el PDF.")
     return redirect('project_detail', pk=pk)
+
+@login_required
+@require_project_member()
+def project_board_chat(request, pk, project=None, membership=None):
+    if not request.user.is_premium:
+        return JsonResponse({'error': 'Esta función es exclusiva para usuarios Premium.'}, status=403)
+        
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+        
+    import json as _json
+    from .ai_board_service import chat_with_board
+    
+    try:
+        body = _json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Datos inválidos.'}, status=400)
+        
+    message = body.get('message', '').strip()
+    if not message:
+        return JsonResponse({'error': 'El mensaje no puede estar vacío.'}, status=400)
+        
+    # Construir board_data
+    tasks = project.tasks.select_related('assignee').all()
+    members = project.members.select_related('user').all()
+    
+    board_data = {
+        'project_name': project.name,
+        'members': [{'id': str(m.user.pk), 'name': m.user.name, 'role': m.role} for m in members],
+        'tasks': [
+            {
+                'id': str(t.pk),
+                'title': t.title,
+                'status': t.status,
+                'priority': t.priority,
+                'type': t.type,
+                'assignee_id': str(t.assignee.pk) if t.assignee else None,
+                'assignee_name': t.assignee.name if t.assignee else None,
+            } for t in tasks
+        ]
+    }
+    
+    result = chat_with_board(message, board_data)
+    if 'error' in result:
+        return JsonResponse({'error': result['error']}, status=422)
+        
+    return JsonResponse(result)
+
+@login_required
+@require_project_member()
+def project_board_chat_apply(request, pk, project=None, membership=None):
+    if not request.user.is_premium:
+        return JsonResponse({'error': 'Esta función es exclusiva para usuarios Premium.'}, status=403)
+        
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido.'}, status=405)
+        
+    import json as _json
+    from django.db import transaction
+    from tasks.models import Task
+    
+    try:
+        body = _json.loads(request.body)
+        actions = body.get('actions', [])
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Datos inválidos.'}, status=400)
+        
+    applied_count = 0
+    try:
+        with transaction.atomic():
+            for action in actions:
+                action_type = action.get('action')
+                if action_type == 'update_status':
+                    task_id = action.get('task_id')
+                    new_status = action.get('new_status')
+                    if task_id and new_status:
+                        Task.objects.filter(pk=task_id, project=project).update(status=new_status)
+                        applied_count += 1
+                elif action_type == 'edit_task':
+                    task_id = action.get('task_id')
+                    if task_id:
+                        try:
+                            task = Task.objects.get(pk=task_id, project=project)
+                            if 'title' in action and action['title']:
+                                task.title = action['title']
+                            if 'priority' in action and action['priority']:
+                                task.priority = action['priority']
+                            if 'description' in action and action['description'] is not None:
+                                task.description = action['description']
+                            if 'assignee_id' in action:
+                                assignee_id = action['assignee_id']
+                                if assignee_id:
+                                    try:
+                                        member = project.members.get(user_id=assignee_id)
+                                        task.assignee = member.user
+                                    except Exception:
+                                        pass
+                                else:
+                                    task.assignee = None
+                            task.save()
+                            applied_count += 1
+                        except Task.DoesNotExist:
+                            pass
+                elif action_type == 'create_task':
+                    title = action.get('title')
+                    if title:
+                        assignee_id = action.get('assignee_id')
+                        parent_id = action.get('parent_id')
+                        assignee = None
+                        parent = None
+                        
+                        if assignee_id:
+                            try:
+                                member = project.members.get(user_id=assignee_id)
+                                assignee = member.user
+                            except Exception:
+                                pass
+                                
+                        if parent_id:
+                            try:
+                                parent = Task.objects.get(pk=parent_id, project=project)
+                            except Exception:
+                                pass
+                                
+                        max_pos = project.tasks.filter(status=action.get('status', 'todo')).count()
+                        Task.objects.create(
+                            project=project,
+                            title=title,
+                            type=action.get('type', 'task'),
+                            status=action.get('status', 'todo'),
+                            parent_task=parent,
+                            assignee=assignee,
+                            position=max_pos
+                        )
+                        applied_count += 1
+                        
+        return JsonResponse({'success': True, 'applied_count': applied_count})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
