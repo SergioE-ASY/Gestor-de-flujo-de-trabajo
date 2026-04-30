@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -342,7 +343,8 @@ def org_hours_export(request, pk, org=None, org_membership=None):
     if task_id:
         qs = qs.filter(task_id=task_id)
 
-    filename_base = f'horas_{org.name.replace(" ", "_")}_{date.today()}'
+    safe_org_name = re.sub(r'[^\w\-]', '_', org.name)[:40]
+    filename_base = f'horas_{safe_org_name}_{date.today()}'
     headers = ['Fecha', 'Proyecto', 'Clave', 'Tarea', 'Ref. tarea', 'Usuario', 'Horas', 'Nota']
 
     def row_data(log):

@@ -60,3 +60,9 @@ class ProfileForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Cuéntanos algo sobre ti…'}),
             'hours_pool': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'min': '0', 'placeholder': '0'}),
         }
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if avatar and hasattr(avatar, 'size') and avatar.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('La imagen no puede superar los 5 MB.')
+        return avatar
